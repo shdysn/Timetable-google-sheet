@@ -1,0 +1,4386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Smart Timetable</title>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: rgba(79, 70, 229, 0.12);
+            --dark: #0f172a;
+            --muted: #64748b;
+            --danger: #ef4444;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --body-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --radius: 16px;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--body-bg);
+            color: var(--dark);
+            font-family: Inter, Arial, sans-serif;
+            padding-bottom: 50px;
+        }
+
+        button,
+        input,
+        select {
+            font-family: inherit;
+        }
+
+        /* NAVIGATION */
+
+        .navbar {
+            position: sticky;
+            top: 8px;
+            z-index: 1000;
+            display: flex;
+            gap: 5px;
+            max-width: 1000px;
+            margin: 10px auto;
+            padding: 5px;
+            background: #e2e8f0;
+            border-radius: 30px;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.04);
+        }
+
+        .navbar button {
+            flex: 1;
+            min-width: 125px;
+            border: none;
+            border-radius: 24px;
+            padding: 10px;
+            font-weight: 800;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .navbar button.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        /* LOCK BAR */
+
+        .lock-bar {
+            max-width: 1250px;
+            margin: 8px auto 15px;
+            padding: 13px 18px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+        }
+
+        .lock-bar.locked {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .lock-title {
+            display: block;
+            font-weight: 900;
+            font-size: 0.95rem;
+        }
+
+        .lock-message {
+            display: block;
+            color: var(--muted);
+            font-size: 0.75rem;
+            margin-top: 3px;
+        }
+
+        .page {
+            display: none;
+            max-width: 1250px;
+            margin: auto;
+            padding: 10px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        }
+
+        .box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(270px, 1fr)
+            );
+            gap: 14px;
+        }
+
+        .title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-bottom: 18px;
+        }
+
+        .label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 800;
+            margin: 10px 0 5px;
+            letter-spacing: 0.5px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            color: var(--dark);
+            font-weight: 650;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            background: var(--dark);
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-light {
+            background: white;
+            color: var(--dark);
+            border: 1px solid var(--border);
+        }
+
+        /* CHIPS */
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .chip button {
+            border: none;
+            background: #f1f5f9;
+            border-radius: 50%;
+            width: 23px;
+            height: 23px;
+            cursor: pointer;
+        }
+
+        .chip button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* ASSIGNMENT */
+
+        .assignment-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 15px;
+        }
+
+        .sidebar {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 7px;
+            max-height: 650px;
+            overflow-y: auto;
+        }
+
+        .sidebar-button {
+            width: 100%;
+            border: none;
+            border-radius: 9px;
+            padding: 9px 11px;
+            margin-bottom: 4px;
+            text-align: left;
+            background: transparent;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .sidebar-button:hover {
+            background: #e2e8f0;
+        }
+
+        .sidebar-button.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fill,
+                minmax(220px, 1fr)
+            );
+            gap: 10px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .period-badge {
+            display: inline-block;
+            background: var(--dark);
+            color: white;
+            border-radius: 18px;
+            padding: 3px 9px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .master-locked-ui {
+            opacity: 0.55;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* TEMPORARY TIMETABLE */
+
+        .leave-list label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 9px;
+            border-radius: 10px;
+            margin: 5px 0;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .leave-list label:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .leave-list input {
+            width: auto;
+            accent-color: var(--danger);
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .stat {
+            flex: 1;
+            text-align: center;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .stat strong {
+            font-size: 1.7rem;
+            display: block;
+            color: var(--primary);
+        }
+
+        .stat.danger strong {
+            color: var(--danger);
+        }
+
+        .absent-name {
+            color: var(--danger);
+            font-weight: 800;
+            margin: 7px 0;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 0.66rem;
+            font-weight: 800;
+        }
+
+        .status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.assigned {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* PRINT AREA */
+
+        .paper {
+            width: 1080px;
+            min-height: 720px;
+            background: white;
+            margin: 15px auto;
+            padding: 22px 35px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .paper h1,
+        .paper h2 {
+            text-align: center;
+            margin: 5px;
+        }
+
+        .paper p {
+            text-align: center;
+            margin: 5px;
+        }
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-top: 15px;
+        }
+
+        .print-table th,
+        .print-table td {
+            border: 1px solid #777;
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .print-table th {
+            background: #e5e7eb;
+            color: black;
+            font-weight: 800;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 45px;
+        }
+
+        .signature {
+            border-top: 1px solid black;
+            width: 150px;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        @media screen and (max-width: 700px) {
+            .assignment-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-height: 180px;
+            }
+
+            .paper {
+                display: none;
+            }
+
+            .lock-bar {
+                margin: 8px 10px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .navbar button {
+                min-width: 105px;
+                font-size: 0.72rem;
+            }
+
+            .panel {
+                padding: 14px;
+            }
+        }
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 6mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .no-print,
+            .navbar,
+            .lock-bar {
+                display: none !important;
+            }
+
+            .page {
+                display: none !important;
+            }
+
+            body.print-master #page3,
+            body.print-temporary #page4 {
+                display: block !important;
+                padding: 0 !important;
+            }
+
+            .panel {
+                display: none !important;
+            }
+
+            .paper {
+                display: block !important;
+                width: 100% !important;
+                min-height: 190mm !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                padding: 8px !important;
+                border: none !important;
+                page-break-after: always;
+            }
+
+            body.print-master .temporary-paper {
+                display: none !important;
+            }
+
+            body.print-temporary .master-paper {
+                display: none !important;
+            }
+
+            .print-table th,
+            .print-table td {
+                font-size: 8pt;
+                padding: 3px;
+            }
+        }
+        
+        
+        /* =========================================================
+   SMART CUSTOM DROPDOWN
+   ========================================================= */
+
+.smart-select {
+    position: relative;
+    width: 100%;
+}
+
+/*
+ * اصل native select چھپا رہے گا لیکن اس کی value
+ * اور onchange functions کام کرتے رہیں گے۔
+ */
+.smart-select > select {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+/* Dropdown کا visible حصہ */
+
+.smart-select-button {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    background: #ffffff;
+    color: var(--dark, #0f172a);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-align: left;
+    transition: 0.2s ease;
+}
+
+.smart-select-button:hover {
+    border-color: #cbd5e1;
+}
+
+.smart-select-button.open {
+    border-color: var(--primary, #4f46e5);
+    box-shadow:
+        0 0 0 3px
+        rgba(79, 70, 229, 0.12);
+}
+
+.smart-select-button.disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.smart-select-text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Arrow */
+
+.smart-select-arrow {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+    transition: transform 0.2s ease;
+}
+
+.smart-select-button.open .smart-select-arrow {
+    transform: rotate(180deg);
+    color: var(--primary, #4f46e5);
+}
+
+/* Arrow کے نیچے آنے والی compact list */
+
+.smart-select-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    right: 0;
+    z-index: 99999;
+
+    max-height: 230px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    padding: 5px;
+    background: #ffffff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+
+    box-shadow:
+        0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.smart-select-list.open {
+    display: block;
+    animation: smartDropdownOpen 0.16s ease;
+}
+
+@keyframes smartDropdownOpen {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dropdown option */
+
+.smart-select-option {
+    width: 100%;
+    min-height: 36px;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 0 0 3px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    background: transparent;
+    color: var(--dark, #0f172a);
+    font-size: 0.82rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.smart-select-option:last-child {
+    margin-bottom: 0;
+}
+
+.smart-select-option:hover {
+    background: #f1f5f9;
+    color: var(--primary, #4f46e5);
+}
+
+.smart-select-option.selected {
+    background: var(--dark, #0f172a);
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.smart-select-option.selected::after {
+    content: "✓";
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+/* Scrollbar */
+
+.smart-select-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.smart-select-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.smart-select-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 20px;
+}
+
+.smart-select-list {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+/*
+ * Period card کے اندر dropdown کھلنے پر
+ * dropdown دوسری cards کے پیچھے نہیں جائے گا۔
+ */
+.card,
+.period-card {
+    position: relative;
+}
+
+.card.smart-dropdown-active,
+.period-card.smart-dropdown-active {
+    z-index: 500;
+}
+
+/* Mobile size */
+
+@media screen and (max-width: 700px) {
+    .smart-select-button {
+        min-height: 39px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    .smart-select-list {
+        max-height: 210px;
+    }
+
+    .smart-select-option {
+        min-height: 35px;
+        padding: 8px 9px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Print میں صرف اصل selected text دکھانے کی ضرورت نہیں */
+
+@media print {
+    .smart-select {
+        display: none !important;
+    }
+}
+
+        
+        
+        
+    
+/* INDIVIDUAL TEACHER TIMETABLE PREVIEW */
+.teacher-slip-paper {
+    min-height: auto;
+    padding: 18px 24px 22px;
+}
+.teacher-slip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 15px;
+    border-bottom: 2px solid #111;
+    padding-bottom: 7px;
+    margin-bottom: 10px;
+}
+.teacher-slip-school {
+    font-size: 22px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+.teacher-slip-session {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.teacher-slip-table {
+    margin-top: 0;
+    border: 2px solid #111;
+}
+.teacher-slip-table th {
+    background: #e5e7eb;
+    color: #111;
+    font-size: 11px;
+    text-transform: uppercase;
+    border: 1px solid #777;
+    border-bottom: 2px solid #111;
+}
+.teacher-slip-table td {
+    height: 58px;
+    font-size: 11px;
+}
+.teacher-slip-table th:first-child,
+.teacher-slip-table td:first-child {
+    width: 14%;
+    text-align: left;
+    padding-left: 9px;
+}
+.teacher-slip-class {
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    color: #111;
+    margin-bottom: 3px;
+}
+.teacher-slip-subject {
+    display: block;
+    font-size: 10px;
+    color: #555;
+}
+.teacher-slip-free {
+    color: #888;
+    font-style: italic;
+}
+.teacher-slip-signatures {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 35px;
+    gap: 30px;
+}
+.teacher-slip-signature {
+    width: 155px;
+    border-top: 1px solid #111;
+    padding-top: 5px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+/* PREVIEW FIX FOR MOBILE */
+#page3.active .paper,
+#page4.active .temporary-paper { display: block; }
+@media screen and (max-width: 700px) {
+    #page3.active .paper,
+    #page4.active .temporary-paper {
+        display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+        margin: 12px auto !important;
+        padding: 12px 8px !important;
+        overflow-x: auto !important;
+    }
+    #page3.active .print-table,
+    #page4.active .print-table,
+    #page3.active .teacher-slip-header,
+    #page3.active .teacher-slip-signatures {
+        min-width: 760px;
+    }
+}
+
+@media print {
+    .teacher-slip-paper {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        min-height: 185mm !important;
+        padding: 7mm !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+    .teacher-slip-header,
+    .teacher-slip-table,
+    .teacher-slip-signatures {
+        visibility: visible !important;
+    }
+    .teacher-slip-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .teacher-slip-table th,
+    .teacher-slip-table td {
+        font-size: 8pt !important;
+        padding: 4px !important;
+    }
+}
+
+
+/* THREE INDIVIDUAL TEACHERS PER A4 LANDSCAPE PAGE */
+.teacher-slip-page {
+    min-height: 720px;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+}
+.teacher-slip-block {
+    flex: 1 1 33.333%;
+    min-height: 0;
+    padding: 8px 0 7px;
+    border-bottom: 1px dashed #94a3b8;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.teacher-slip-block:last-child {
+    border-bottom: none;
+}
+.teacher-slip-header {
+    padding-bottom: 4px;
+    margin-bottom: 5px;
+}
+.teacher-slip-school {
+    font-size: 17px;
+}
+.teacher-slip-session {
+    font-size: 11px;
+}
+.teacher-slip-table {
+    margin-top: 0;
+}
+.teacher-slip-table th {
+    font-size: 9px;
+    padding: 5px 3px;
+}
+.teacher-slip-table td {
+    height: 43px;
+    font-size: 9px;
+    padding: 3px;
+}
+.teacher-slip-label {
+    color: #555;
+    font-size: 9px;
+}
+.teacher-slip-class {
+    font-size: 10px;
+    margin-bottom: 1px;
+}
+.teacher-slip-subject {
+    font-size: 8px;
+}
+.teacher-slip-signatures {
+    margin-top: 17px;
+    gap: 25px;
+}
+.teacher-slip-signature {
+    width: 135px;
+    font-size: 8px;
+    padding-top: 3px;
+}
+@media screen and (max-width: 700px) {
+    #page3.active .teacher-slip-page {
+        display: flex !important;
+        min-width: 780px;
+        min-height: 560px !important;
+    }
+}
+@media print {
+    .teacher-slip-page {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: 188mm !important;
+        min-height: 188mm !important;
+        max-height: 188mm !important;
+        padding: 3mm 5mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        overflow: hidden !important;
+    }
+    .teacher-slip-block {
+        flex: 1 1 33.333% !important;
+        min-height: 0 !important;
+        padding: 2mm 0 1.5mm !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    .teacher-slip-header {
+        padding-bottom: 1mm !important;
+        margin-bottom: 1.5mm !important;
+    }
+    .teacher-slip-school { font-size: 12pt !important; }
+    .teacher-slip-session { font-size: 8pt !important; }
+    .teacher-slip-table { margin: 0 !important; }
+    .teacher-slip-table th {
+        font-size: 6.7pt !important;
+        padding: 1.2mm .7mm !important;
+    }
+    .teacher-slip-table td {
+        height: 10mm !important;
+        font-size: 6.8pt !important;
+        padding: .7mm !important;
+    }
+    .teacher-slip-class { font-size: 7.5pt !important; }
+    .teacher-slip-subject { font-size: 6.5pt !important; }
+    .teacher-slip-label { font-size: 6.5pt !important; }
+    .teacher-slip-signatures {
+        margin-top: 4mm !important;
+        gap: 8mm !important;
+    }
+    .teacher-slip-signature {
+        width: 35mm !important;
+        font-size: 6.5pt !important;
+        padding-top: 1mm !important;
+    }
+}
+
+
+/* PREMIUM SETUP MANAGEMENT VIEW */
+.setup-hero {
+    display:flex; justify-content:space-between; align-items:center; gap:16px;
+    padding:18px 20px; margin-bottom:16px; border-radius:18px;
+    background:linear-gradient(135deg,#eef2ff 0%,#ffffff 55%,#f0fdf4 100%);
+    border:1px solid #dbeafe;
+}
+.setup-hero-title {font-size:1.25rem;font-weight:900;margin:0 0 4px}
+.setup-hero-subtitle {font-size:.78rem;color:var(--muted);font-weight:650}
+.setup-summary {display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.setup-summary-pill {background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px 11px;min-width:80px;text-align:center;box-shadow:0 2px 7px rgba(15,23,42,.04)}
+.setup-summary-pill strong {display:block;font-size:1.1rem;color:var(--primary)}
+.setup-summary-pill span {font-size:.62rem;font-weight:850;color:var(--muted);text-transform:uppercase}
+.setup-management-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+.setup-card {background:#fff;border:1px solid var(--border);border-radius:18px;padding:0;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.045);transition:transform .2s,border-color .2s,box-shadow .2s}
+.setup-card:hover {transform:translateY(-2px);border-color:#c7d2fe;box-shadow:0 8px 22px rgba(15,23,42,.08)}
+.setup-card-head {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px;border-bottom:1px solid var(--border)}
+.setup-card-title-wrap {display:flex;align-items:center;gap:10px}
+.setup-card-icon {width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:#eef2ff}
+.setup-card.subject-card .setup-card-icon {background:#fef3c7}
+.setup-card.teacher-card .setup-card-icon {background:#dcfce7}
+.setup-card-title {font-size:.94rem;font-weight:900}
+.setup-card-note {font-size:.64rem;color:var(--muted);font-weight:700;margin-top:2px}
+.setup-count {min-width:30px;height:30px;padding:0 8px;border-radius:18px;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900}
+.setup-card-body {padding:14px}
+.setup-add-row {display:grid;grid-template-columns:1fr 42px;gap:7px}
+.setup-add-row input {height:41px;background:#f8fafc}
+.setup-add-row .btn {height:41px;padding:0;font-size:1.15rem;background:var(--primary)}
+.setup-list-label {display:flex;justify-content:space-between;align-items:center;margin:12px 1px 7px;font-size:.64rem;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.5px}
+.setup-chip-area {align-content:flex-start;max-height:220px;overflow-y:auto;padding:3px 2px 4px;margin-top:0}
+.setup-chip-area:empty::after {content:'No records added';display:block;color:#94a3b8;font-size:.76rem;padding:10px;text-align:center;border:1px dashed #cbd5e1;border-radius:10px;width:100%}
+.setup-chip-area .chip {width:100%;justify-content:flex-start;border-radius:10px;padding:7px 9px;background:#f8fafc;box-shadow:none}
+.setup-chip-area .chip button:first-of-type {margin-left:auto}
+.setup-branding-box {background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:0 4px 16px rgba(15,23,42,.04)}
+.setup-branding-grid {display:grid;grid-template-columns:2fr 1.3fr .7fr;gap:12px}
+@media(max-width:900px){.setup-management-grid{grid-template-columns:1fr 1fr}.setup-card.teacher-card{grid-column:1/-1}.setup-branding-grid{grid-template-columns:1fr 1fr}.setup-branding-grid .period-field{grid-column:1/-1}}
+@media(max-width:600px){.setup-hero{align-items:flex-start;flex-direction:column}.setup-summary{width:100%;justify-content:stretch}.setup-summary-pill{flex:1}.setup-management-grid{grid-template-columns:1fr}.setup-card.teacher-card{grid-column:auto}.setup-branding-grid{grid-template-columns:1fr}.setup-branding-grid .period-field{grid-column:auto}.setup-chip-area{max-height:185px}}
+
+
+/* PREMIUM ASSIGNMENT WORKSPACE */
+.assign-hero{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 18px;margin-bottom:14px;border:1px solid #dbeafe;border-radius:18px;background:linear-gradient(135deg,#eef2ff,#fff 58%,#f0fdf4)}
+.assign-hero-title{font-size:1.18rem;font-weight:900}.assign-hero-note{font-size:.72rem;color:var(--muted);font-weight:650;margin-top:3px}.assign-stats{display:flex;gap:8px;flex-wrap:wrap}.assign-stat{min-width:82px;padding:7px 10px;text-align:center;background:#fff;border:1px solid var(--border);border-radius:13px}.assign-stat strong{display:block;font-size:1rem;color:var(--primary)}.assign-stat span{font-size:.58rem;color:var(--muted);font-weight:850;text-transform:uppercase}
+.assign-mode-tabs{display:flex;gap:5px;padding:5px;margin-bottom:14px;background:#e2e8f0;border-radius:14px}.assign-mode-btn{flex:1;border:0;border-radius:10px;padding:9px 8px;background:transparent;color:var(--muted);font-size:.78rem;font-weight:850;cursor:pointer}.assign-mode-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.assignment-layout{grid-template-columns:255px minmax(0,1fr);align-items:start}.sidebar{position:sticky;top:75px;max-height:calc(100vh - 105px);padding:8px}.assign-sidebar-head{padding:7px 8px 10px;border-bottom:1px solid var(--border);margin-bottom:6px}.assign-sidebar-title{font-size:.72rem;font-weight:900;text-transform:uppercase}.assign-sidebar-note{font-size:.62rem;color:var(--muted);margin-top:2px}.sidebar-button{display:flex;justify-content:space-between;align-items:center;gap:8px}.sidebar-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sidebar-load{flex:0 0 auto;min-width:39px;padding:3px 6px;border-radius:12px;background:#e2e8f0;color:#475569;font-size:.58rem;font-weight:900;text-align:center}.sidebar-button.active .sidebar-load{background:#eef2ff;color:var(--primary)}
+.assign-editor{min-width:0}.assign-editor-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;padding:0 2px}.assign-editor-title{font-size:1rem;font-weight:900}.assign-editor-subtitle{font-size:.66rem;color:var(--muted);margin-top:2px}.assign-progress{min-width:120px}.assign-progress-text{display:flex;justify-content:space-between;font-size:.6rem;font-weight:800;color:var(--muted);margin-bottom:4px}.assign-progress-track{height:6px;border-radius:10px;background:#e2e8f0;overflow:hidden}.assign-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#22c55e);border-radius:10px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:11px}.card{border-radius:16px;padding:12px;box-shadow:0 3px 12px rgba(15,23,42,.04);transition:border-color .18s,box-shadow .18s}.card:hover{border-color:#c7d2fe;box-shadow:0 6px 18px rgba(15,23,42,.07)}.period-card-free{border-top:3px solid #cbd5e1}.period-card-assigned{border-top:3px solid var(--primary)}.period-card-conflict{border-top:3px solid var(--danger)}
+.period-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.period-state{font-size:.56rem;font-weight:900;text-transform:uppercase;padding:3px 7px;border-radius:12px;background:#f1f5f9;color:#64748b}.period-state.assigned{background:#e0e7ff;color:#4338ca}.period-state.busy{background:#fee2e2;color:#b91c1c}
+.empty-assignment{grid-column:1/-1;padding:35px;text-align:center;border:1px dashed #cbd5e1;border-radius:14px;color:var(--muted);background:#f8fafc}.incharge-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}.incharge-card{border-top:3px solid #f59e0b}.incharge-class{font-size:1rem;font-weight:900;margin-bottom:2px}.incharge-note{font-size:.65rem;color:var(--muted);margin-bottom:9px}
+@media(max-width:760px){.assign-hero{align-items:flex-start;flex-direction:column}.assign-stats{width:100%}.assign-stat{flex:1}.assign-mode-btn{font-size:.67rem;padding:8px 4px}.assignment-layout{grid-template-columns:1fr}.sidebar{position:static;max-height:190px}.assign-editor-head{align-items:flex-start;flex-direction:column}.assign-progress{width:100%}.cards{grid-template-columns:1fr}}
+
+
+/* PREMIUM TEMPORARY TIMETABLE WORKSPACE */
+.temp-hero{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 18px;margin-bottom:14px;border:1px solid #fed7aa;border-radius:18px;background:linear-gradient(135deg,#fff7ed,#fff 58%,#f0fdf4)}
+.temp-hero-title{font-size:1.18rem;font-weight:900}.temp-hero-note{font-size:.72rem;color:var(--muted);font-weight:650;margin-top:3px}.temp-date-box{min-width:195px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:8px 10px}.temp-date-box .label{margin:0 0 4px}.temp-date-box input{padding:7px 9px;height:35px}
+.temp-summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}.temp-summary-card{background:#fff;border:1px solid var(--border);border-radius:15px;padding:11px 12px;box-shadow:0 3px 12px rgba(15,23,42,.04)}.temp-summary-card strong{display:block;font-size:1.2rem;color:var(--primary)}.temp-summary-card span{font-size:.61rem;color:var(--muted);font-weight:850;text-transform:uppercase}.temp-summary-card.danger strong{color:var(--danger)}.temp-summary-card.success strong{color:var(--success)}.temp-summary-card.warning strong{color:var(--warning)}
+.temp-layout{display:grid;grid-template-columns:285px minmax(0,1fr);gap:14px;align-items:start}.temp-leave-panel{position:sticky;top:75px;background:#f8fafc;border:1px solid var(--border);border-radius:17px;padding:12px;max-height:calc(100vh - 100px);overflow:auto}.temp-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}.temp-panel-title{font-size:.85rem;font-weight:900}.temp-panel-note{font-size:.62rem;color:var(--muted);margin-top:2px}.temp-leave-count{padding:4px 8px;border-radius:13px;background:#fee2e2;color:#b91c1c;font-size:.61rem;font-weight:900}.temp-search{margin-bottom:9px;background:#fff}.leave-list{display:flex;flex-direction:column;gap:5px}.leave-list label{margin:0;justify-content:space-between;padding:8px 9px}.leave-list label.temp-on-leave{background:#fef2f2;border-color:#fecaca;color:#b91c1c}.leave-teacher-name{display:flex;align-items:center;gap:7px;min-width:0}.leave-teacher-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.leave-duty-count{flex:0 0 auto;padding:3px 7px;background:#e2e8f0;border-radius:11px;color:#475569;font-size:.56rem;font-weight:900}.temp-on-leave .leave-duty-count{background:#fee2e2;color:#b91c1c}
+.temp-editor{min-width:0}.temp-editor-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.temp-editor-title{font-size:1rem;font-weight:900}.temp-editor-note{font-size:.65rem;color:var(--muted);margin-top:2px}.temp-actions{display:flex;gap:7px;flex-wrap:wrap}.temp-actions .btn{font-size:.7rem;padding:8px 10px}.temporary-duty-card{border-top:3px solid var(--warning)}.temporary-duty-card.is-assigned{border-top-color:var(--success)}.temp-duty-top{display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:7px}.temp-duty-status{font-size:.55rem;font-weight:900;text-transform:uppercase;padding:3px 7px;border-radius:12px;background:#fef3c7;color:#92400e}.temp-duty-status.done{background:#dcfce7;color:#166534}.temp-duty-class{font-size:.9rem;font-weight:900}.temp-duty-subject{font-size:.67rem;color:var(--muted);font-weight:700;margin-top:2px}.absent-name{display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:9px;background:#fef2f2;margin:8px 0;color:#b91c1c;font-size:.7rem}.temp-empty{grid-column:1/-1;padding:38px 15px;text-align:center;border:1px dashed #cbd5e1;border-radius:15px;background:#f8fafc;color:var(--muted)}.temp-empty-icon{font-size:1.8rem;margin-bottom:6px}.temp-progress{margin:3px 0 12px}.temp-progress-head{display:flex;justify-content:space-between;font-size:.61rem;font-weight:800;color:var(--muted);margin-bottom:4px}.temp-progress-track{height:7px;background:#e2e8f0;border-radius:10px;overflow:hidden}.temp-progress-fill{height:100%;background:linear-gradient(90deg,#f59e0b,#22c55e);border-radius:10px}
+@media(max-width:850px){.temp-summary-row{grid-template-columns:1fr 1fr}.temp-layout{grid-template-columns:1fr}.temp-leave-panel{position:static;max-height:300px}.temp-editor-head{align-items:flex-start;flex-direction:column}.temp-actions{width:100%}.temp-actions .btn{flex:1}}
+@media(max-width:520px){.temp-hero{align-items:stretch;flex-direction:column}.temp-date-box{min-width:0}.temp-summary-row{grid-template-columns:1fr 1fr}.temp-summary-card{padding:9px}.temp-summary-card strong{font-size:1rem}.temp-actions{flex-direction:column}.temp-actions .btn{width:100%}}
+
+
+/* PREMIUM PRINT CENTER */
+.print-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;margin-bottom:14px;border:1px solid #c7d2fe;border-radius:18px;background:linear-gradient(135deg,#eef2ff 0%,#fff 58%,#f0fdf4 100%)}
+.print-hero-title{font-size:1.2rem;font-weight:900}.print-hero-note{font-size:.72rem;color:var(--muted);font-weight:650;margin-top:3px}.print-hero-actions{display:flex;gap:7px;flex-wrap:wrap}.print-hero-actions .btn{font-size:.72rem;padding:9px 11px}.print-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}.print-summary-card{background:#fff;border:1px solid var(--border);border-radius:15px;padding:11px 12px;box-shadow:0 3px 12px rgba(15,23,42,.04)}.print-summary-card strong{display:block;font-size:1.18rem;color:var(--primary)}.print-summary-card span{font-size:.6rem;color:var(--muted);font-weight:850;text-transform:uppercase}.print-summary-card.green strong{color:var(--success)}.print-summary-card.orange strong{color:var(--warning)}
+.print-tabs{display:flex;gap:5px;padding:5px;margin-bottom:14px;background:#e2e8f0;border-radius:14px}.print-tab-btn{flex:1;border:0;border-radius:10px;padding:9px 7px;background:transparent;color:var(--muted);font-size:.74rem;font-weight:850;cursor:pointer}.print-tab-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.print-preview-shell{background:#f1f5f9;border:1px solid var(--border);border-radius:18px;padding:14px}.print-preview-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}.print-preview-title{font-size:.92rem;font-weight:900}.print-preview-note{font-size:.64rem;color:var(--muted);margin-top:2px}.print-scale-note{padding:4px 8px;border-radius:12px;background:#fff;color:#64748b;font-size:.58rem;font-weight:900}.print-preview-section{display:none}.print-preview-section.active{display:block}.print-preview-shell .paper{margin:0 auto 14px}.print-preview-shell .paper:last-child{margin-bottom:0}.print-empty{padding:35px;text-align:center;border:1px dashed #cbd5e1;border-radius:14px;background:#fff;color:var(--muted)}
+.print-fab{position:sticky;bottom:12px;z-index:60;display:flex;justify-content:center;margin-top:14px}.print-fab .btn{min-width:230px;box-shadow:0 10px 25px rgba(15,23,42,.2);padding:12px 18px}
+@media(max-width:850px){.print-summary{grid-template-columns:1fr 1fr}.print-hero{align-items:flex-start;flex-direction:column}.print-hero-actions{width:100%}.print-hero-actions .btn{flex:1}.print-tab-btn{font-size:.63rem;padding:8px 3px}.print-preview-shell{padding:8px}.print-preview-head{align-items:flex-start;flex-direction:column}}
+@media(max-width:520px){.print-hero-actions{flex-direction:column}.print-hero-actions .btn{width:100%}.print-summary-card{padding:9px}.print-summary-card strong{font-size:1rem}.print-fab .btn{width:100%;min-width:0}}
+@media print{.print-center-ui{display:none!important}.print-preview-shell{background:#fff!important;border:0!important;padding:0!important}.print-preview-section{display:block!important}}
+
+
+/* BUSY PERIOD COLOR RESTORED */
+.period-card-busy {
+    border-top: 4px solid var(--danger) !important;
+    background: linear-gradient(180deg, #fff4f4 0%, #ffffff 42%);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.12) !important;
+}
+.period-card-busy .period-badge {
+    background: var(--danger) !important;
+}
+.period-card-busy .period-state {
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+}
+.busy-period-note {
+    margin: 7px 0 2px;
+    padding: 6px 8px;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: .65rem;
+    font-weight: 800;
+}
+.smart-select-option:has(.smart-busy-badge) {
+    background: #fff7f7;
+    color: #991b1b;
+}
+.smart-select-option:has(.smart-busy-badge):hover {
+    background: #fee2e2;
+}
+
+
+/* PROFESSIONAL HAMBURGER MENU */
+.mobile-topbar{display:none;position:sticky;top:0;z-index:1200;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--border);box-shadow:0 4px 18px rgba(15,23,42,.08);backdrop-filter:blur(14px)}
+.mobile-brand{display:flex;align-items:center;gap:10px;min-width:0}.mobile-brand-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;font-size:1.05rem;box-shadow:0 6px 14px rgba(79,70,229,.25)}.mobile-brand-copy{min-width:0}.mobile-brand-title{font-size:.88rem;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-brand-page{font-size:.62rem;color:var(--muted);font-weight:750;margin-top:2px}
+.menu-toggle{width:42px;height:42px;border:0;border-radius:12px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;cursor:pointer}.menu-lines{position:relative;width:21px;height:15px}.menu-lines span{position:absolute;left:0;width:21px;height:2.5px;border-radius:5px;background:var(--dark);transition:transform .25s,top .25s,opacity .2s}.menu-lines span:nth-child(1){top:0}.menu-lines span:nth-child(2){top:6px}.menu-lines span:nth-child(3){top:12px}.menu-toggle.open .menu-lines span:nth-child(1){top:6px;transform:rotate(45deg)}.menu-toggle.open .menu-lines span:nth-child(2){opacity:0}.menu-toggle.open .menu-lines span:nth-child(3){top:6px;transform:rotate(-45deg)}
+.menu-overlay{display:none;position:fixed;inset:0;z-index:1090;background:rgba(15,23,42,.45);backdrop-filter:blur(2px)}.menu-overlay.open{display:block}.mobile-drawer{position:fixed;top:0;right:0;z-index:1150;width:min(84vw,330px);height:100dvh;padding:16px;background:#fff;box-shadow:-18px 0 45px rgba(15,23,42,.22);transform:translateX(105%);transition:transform .28s ease;overflow-y:auto}.mobile-drawer.open{transform:translateX(0)}.drawer-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 2px 15px;border-bottom:1px solid var(--border)}.drawer-school{font-size:.94rem;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.drawer-session{color:var(--muted);font-size:.64rem;font-weight:700;margin-top:3px}.drawer-close{width:34px;height:34px;border:0;border-radius:10px;background:#f1f5f9;font-size:1rem;cursor:pointer}.drawer-label{margin:15px 4px 7px;color:#94a3b8;font-size:.59rem;font-weight:900;text-transform:uppercase;letter-spacing:.8px}.drawer-nav{display:flex;flex-direction:column;gap:6px}.drawer-nav-btn{width:100%;border:1px solid transparent;border-radius:13px;padding:11px 12px;display:flex;align-items:center;gap:11px;background:transparent;color:var(--dark);text-align:left;cursor:pointer}.drawer-nav-btn:hover{background:#f8fafc}.drawer-nav-btn.active{background:#eef2ff;border-color:#c7d2fe;color:var(--primary)}.drawer-nav-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;font-size:1rem}.drawer-nav-btn.active .drawer-nav-icon{background:#fff}.drawer-nav-copy{flex:1}.drawer-nav-title{font-size:.8rem;font-weight:900}.drawer-nav-note{font-size:.59rem;color:var(--muted);margin-top:2px}.drawer-arrow{font-size:.9rem;color:#94a3b8}.drawer-status{margin-top:17px;padding:11px;border-radius:13px;background:#f8fafc;border:1px solid var(--border);display:flex;align-items:center;gap:9px}.drawer-status-dot{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px #dcfce7}.drawer-status.locked .drawer-status-dot{background:#ef4444;box-shadow:0 0 0 4px #fee2e2}.drawer-status-title{font-size:.7rem;font-weight:900}.drawer-status-note{font-size:.58rem;color:var(--muted);margin-top:1px}
+body.menu-open{overflow:hidden}
+@media(max-width:700px){.mobile-topbar{display:flex}.navbar{display:none!important}.lock-bar{position:relative;top:auto;margin-top:10px}.page{padding-top:3px}}
+@media(min-width:701px){.mobile-drawer,.menu-overlay{display:none!important}}
+@media print{.mobile-topbar,.mobile-drawer,.menu-overlay{display:none!important}}
+
+</style>
+</head>
+
+<body>
+
+    <!-- PROFESSIONAL MOBILE MENU -->
+    <header class="mobile-topbar no-print">
+        <div class="mobile-brand">
+            <div class="mobile-brand-icon">📘</div>
+            <div class="mobile-brand-copy">
+                <div id="mobile-brand-title" class="mobile-brand-title">Smart Timetable</div>
+                <div id="mobile-current-page" class="mobile-brand-page">Setup</div>
+            </div>
+        </div>
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open menu" onclick="toggleMobileMenu()">
+            <span class="menu-lines"><span></span><span></span><span></span></span>
+        </button>
+    </header>
+    <div id="menu-overlay" class="menu-overlay no-print" onclick="closeMobileMenu()"></div>
+    <aside id="mobile-drawer" class="mobile-drawer no-print">
+        <div class="drawer-head">
+            <div style="min-width:0"><div id="drawer-school" class="drawer-school">Smart Timetable</div><div id="drawer-session" class="drawer-session">Academic Session</div></div>
+            <button class="drawer-close" type="button" onclick="closeMobileMenu()">✕</button>
+        </div>
+        <div class="drawer-label">Navigation</div>
+        <nav class="drawer-nav">
+            <button id="drawer-nav1" class="drawer-nav-btn active" onclick="navigateFromMenu(1)"><span class="drawer-nav-icon">⚙️</span><span class="drawer-nav-copy"><span class="drawer-nav-title">Setup</span><span class="drawer-nav-note">School, classes, subjects and teachers</span></span><span class="drawer-arrow">›</span></button>
+            <button id="drawer-nav2" class="drawer-nav-btn" onclick="navigateFromMenu(2)"><span class="drawer-nav-icon">📝</span><span class="drawer-nav-copy"><span class="drawer-nav-title">Assign Duties</span><span class="drawer-nav-note">Teacher, class and incharge periods</span></span><span class="drawer-arrow">›</span></button>
+            <button id="drawer-nav4" class="drawer-nav-btn" onclick="navigateFromMenu(4)"><span class="drawer-nav-icon">📅</span><span class="drawer-nav-copy"><span class="drawer-nav-title">Temporary</span><span class="drawer-nav-note">Leave and substitute assignments</span></span><span class="drawer-arrow">›</span></button>
+            <button id="drawer-nav3" class="drawer-nav-btn" onclick="navigateFromMenu(3)"><span class="drawer-nav-icon">🖨️</span><span class="drawer-nav-copy"><span class="drawer-nav-title">Print Center</span><span class="drawer-nav-note">Preview and print timetables</span></span><span class="drawer-arrow">›</span></button>
+        </nav>
+        <div id="drawer-lock-status" class="drawer-status">
+            <span class="drawer-status-dot"></span>
+            <div><div id="drawer-lock-title" class="drawer-status-title">Timetable Unlocked</div><div class="drawer-status-note">Cloud-connected timetable workspace</div></div>
+        </div>
+    </aside>
+
+    <!-- NAVIGATION -->
+
+    <div class="navbar no-print">
+        <button
+            id="nav1"
+            class="active"
+            onclick="switchPage(1)"
+        >
+            ⚙️ Setup
+        </button>
+
+        <button
+            id="nav2"
+            onclick="switchPage(2)"
+        >
+            📝 Assign
+        </button>
+
+        <button
+            id="nav4"
+            onclick="switchPage(4)"
+        >
+            📅 Temporary
+        </button>
+
+        <button
+            id="nav3"
+            onclick="switchPage(3)"
+        >
+            🖨️ Print
+        </button>
+    </div>
+
+    <!-- MASTER LOCK STATUS -->
+
+    <div
+        id="master-lock-bar"
+        class="lock-bar no-print"
+    >
+        <div>
+            <span
+                id="master-lock-title"
+                class="lock-title"
+            >
+                🔓 Timetable Unlocked
+            </span>
+
+            <span
+                id="master-lock-message"
+                class="lock-message"
+            >
+                Permanent data can be edited.
+            </span>
+        </div>
+
+        <button
+            id="master-lock-button"
+            class="btn"
+            onclick="toggleMasterLock()"
+        >
+            🔒 Lock Timetable
+        </button>
+    </div>
+
+    <!-- PAGE 1 -->
+
+    <section id="page1" class="page active">
+        <div class="panel">
+            <div id="master-setup-area">
+                <div class="setup-hero">
+                    <div>
+                        <div class="setup-hero-title">✨ Workspace Configuration</div>
+                        <div class="setup-hero-subtitle">Manage school information, classes, subjects and teaching staff from one compact workspace.</div>
+                    </div>
+                    <div class="setup-summary">
+                        <div class="setup-summary-pill"><strong id="setup-class-total">0</strong><span>Classes</span></div>
+                        <div class="setup-summary-pill"><strong id="setup-subject-total">0</strong><span>Subjects</span></div>
+                        <div class="setup-summary-pill"><strong id="setup-teacher-total">0</strong><span>Teachers</span></div>
+                    </div>
+                </div>
+
+                <div class="setup-branding-box">
+                    <div class="setup-card-head" style="padding:0 0 12px;border-bottom:0">
+                        <div class="setup-card-title-wrap">
+                            <div class="setup-card-icon">🏫</div>
+                            <div><div class="setup-card-title">Document Branding</div><div class="setup-card-note">Information printed on every timetable</div></div>
+                        </div>
+                    </div>
+                    <div class="setup-branding-grid">
+                        <div><label class="label">Institute Name</label><input id="school-name" type="text" placeholder="School name" oninput="updateSettings()"></div>
+                        <div><label class="label">Academic Session</label><input id="academic-session" type="text" placeholder="Session: 2026 - 2027" oninput="updateSettings()"></div>
+                        <div class="period-field"><label class="label">Total Periods</label><input id="total-periods" type="number" min="1" max="15" onchange="updateSettings()"></div>
+                    </div>
+                </div>
+
+                <div class="setup-management-grid">
+                    <div class="setup-card class-card">
+                        <div class="setup-card-head"><div class="setup-card-title-wrap"><div class="setup-card-icon">🏫</div><div><div class="setup-card-title">Classes</div><div class="setup-card-note">Add sections and grades</div></div></div><div class="setup-count" id="classes-count">0</div></div>
+                        <div class="setup-card-body"><div class="setup-add-row"><input id="new-class" type="text" placeholder="e.g. Class 8 - A" onkeydown="if(event.key==='Enter') addItem('classes','new-class')"><button class="btn" onclick="addItem('classes','new-class')">+</button></div><div class="setup-list-label"><span>Class list</span><span>Edit or delete</span></div><div id="classes-chips" class="chips setup-chip-area"></div></div>
+                    </div>
+                    <div class="setup-card subject-card">
+                        <div class="setup-card-head"><div class="setup-card-title-wrap"><div class="setup-card-icon">📚</div><div><div class="setup-card-title">Subjects</div><div class="setup-card-note">Build the subject library</div></div></div><div class="setup-count" id="subjects-count">0</div></div>
+                        <div class="setup-card-body"><div class="setup-add-row"><input id="new-subject" type="text" placeholder="e.g. Mathematics" onkeydown="if(event.key==='Enter') addItem('subjects','new-subject')"><button class="btn" onclick="addItem('subjects','new-subject')">+</button></div><div class="setup-list-label"><span>Subject list</span><span>Edit or delete</span></div><div id="subjects-chips" class="chips setup-chip-area"></div></div>
+                    </div>
+                    <div class="setup-card teacher-card">
+                        <div class="setup-card-head"><div class="setup-card-title-wrap"><div class="setup-card-icon">👨‍🏫</div><div><div class="setup-card-title">Teachers</div><div class="setup-card-note">Manage teaching staff</div></div></div><div class="setup-count" id="teachers-count">0</div></div>
+                        <div class="setup-card-body"><div class="setup-add-row"><input id="new-teacher" type="text" placeholder="e.g. Teacher name" onkeydown="if(event.key==='Enter') addItem('teachers','new-teacher')"><button class="btn" onclick="addItem('teachers','new-teacher')">+</button></div><div class="setup-list-label"><span>Teacher list</span><span>Edit or delete</span></div><div id="teachers-chips" class="chips setup-chip-area"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE 2 -->
+    <section id="page2" class="page">
+        <div class="panel">
+            <div id="master-assignment-area">
+                <div class="assign-hero">
+                    <div><div class="assign-hero-title">🧠 Smart Duty Management</div><div class="assign-hero-note">Assign permanent duties with conflict awareness and a compact period editor.</div></div>
+                    <div class="assign-stats"><div class="assign-stat"><strong id="assign-teacher-total">0</strong><span>Teachers</span></div><div class="assign-stat"><strong id="assign-class-total">0</strong><span>Classes</span></div><div class="assign-stat"><strong id="assign-period-total">0</strong><span>Periods</span></div></div>
+                </div>
+                <div class="assign-mode-tabs">
+                    <button id="assign-mode-teacher" class="assign-mode-btn active" onclick="setAssignmentMode('teacher')">👨‍🏫 Instructor View</button>
+                    <button id="assign-mode-class" class="assign-mode-btn" onclick="setAssignmentMode('class')">🏫 Class View</button>
+                    <button id="assign-mode-incharge" class="assign-mode-btn" onclick="setAssignmentMode('incharge')">👑 Class Incharges</button>
+                </div>
+                <div class="assignment-layout">
+                    <div id="assignment-sidebar" class="sidebar"></div>
+                    <div class="assign-editor">
+                        <div class="assign-editor-head"><div><div id="assignment-title" class="assign-editor-title">Select an item</div><div id="assignment-subtitle" class="assign-editor-subtitle">Choose a teacher or class from the list.</div></div><div id="assignment-progress" class="assign-progress"></div></div>
+                        <div id="assignment-cards" class="cards"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE 4: TEMPORARY TIMETABLE -->
+    <section id="page4" class="page">
+        <div class="panel">
+            <div class="temp-hero">
+                <div><div class="temp-hero-title">📅 Daily Leave & Temporary Timetable</div><div class="temp-hero-note">Mark absent teachers and assign available substitutes without changing the master timetable.</div></div>
+                <div class="temp-date-box"><label class="label">Timetable Date</label><input id="temporary-date" type="date" onchange="renderTemporaryTimetable()"></div>
+            </div>
+
+            <div class="temp-summary-row">
+                <div class="temp-summary-card danger"><strong id="leave-count">0</strong><span>On Leave</span></div>
+                <div class="temp-summary-card warning"><strong id="affected-count">0</strong><span>Affected Periods</span></div>
+                <div class="temp-summary-card success"><strong id="temp-assigned-count">0</strong><span>Substitutes Set</span></div>
+                <div class="temp-summary-card"><strong id="temp-pending-count">0</strong><span>Pending Duties</span></div>
+            </div>
+
+            <div class="temp-layout">
+                <aside class="temp-leave-panel">
+                    <div class="temp-panel-head"><div><div class="temp-panel-title">🏖️ Teachers on Leave</div><div class="temp-panel-note">Select all absent teachers</div></div><div id="temp-leave-badge" class="temp-leave-count">0 selected</div></div>
+                    <input id="temp-teacher-search" class="temp-search" type="text" placeholder="Search teacher..." oninput="filterTemporaryTeachers()">
+                    <div id="leave-teacher-list" class="leave-list"></div>
+                </aside>
+
+                <main class="temp-editor">
+                    <div class="temp-editor-head">
+                        <div><div class="temp-editor-title">Substitute Duty Assignments</div><div class="temp-editor-note">Only free and available teachers are shown in each dropdown.</div></div>
+                        <div class="temp-actions"><button class="btn btn-primary" onclick="autoAssignSubstitutes()">✨ Auto Assign</button><button class="btn btn-light" onclick="clearLeaveTeachers()">✓ Clear Leave</button><button class="btn btn-light" onclick="clearSubstituteAssignments()">↺ Clear Assignments</button><button class="btn btn-danger" onclick="clearTemporaryDate()">🗑️ Clear Date</button></div>
+                    </div>
+                    <div id="temp-progress" class="temp-progress"></div>
+                    <div id="temporary-cards" class="cards"></div>
+                </main>
+            </div>
+        </div>
+
+        <div class="paper temporary-paper">
+            <h1 id="temporary-print-school"></h1>
+            <p id="temporary-print-heading"></p>
+            <p id="temporary-print-leaves"></p>
+            <table class="print-table"><thead><tr><th>Period</th><th>Class</th><th>Subject</th><th>Absent Teacher</th><th>Substitute Teacher</th><th>Status</th></tr></thead><tbody id="temporary-print-body"></tbody></table>
+            <div class="signatures"><div class="signature">Prepared By</div><div class="signature">Timetable Incharge</div><div class="signature">Principal</div></div>
+        </div>
+        <div class="no-print" style="text-align:center"><button class="btn" onclick="printTemporaryTimetable()">🖨️ Print Temporary Timetable</button></div>
+    </section>
+
+    <!-- PAGE 3: PREMIUM PRINT CENTER -->
+    <section id="page3" class="page">
+        <div class="print-center-ui">
+            <div class="print-hero">
+                <div><div class="print-hero-title">🖨️ Smart Print Center</div><div class="print-hero-note">Preview class and individual timetables before producing a clean A4 landscape print.</div></div>
+                <div class="print-hero-actions"><button class="btn btn-primary" onclick="printMasterTimetables()">🖨️ Print All</button><button class="btn btn-light" onclick="showPrintPreview('class')">🏫 Class View</button><button class="btn btn-light" onclick="showPrintPreview('teachers')">👨‍🏫 Teacher View</button></div>
+            </div>
+            <div class="print-summary">
+                <div class="print-summary-card"><strong id="print-class-total">0</strong><span>Classes</span></div>
+                <div class="print-summary-card green"><strong id="print-teacher-total">0</strong><span>Teachers</span></div>
+                <div class="print-summary-card orange"><strong id="print-period-total">0</strong><span>Periods</span></div>
+                <div class="print-summary-card"><strong id="print-page-total">0</strong><span>Estimated Pages</span></div>
+            </div>
+            <div class="print-tabs">
+                <button id="print-tab-class" class="print-tab-btn active" onclick="showPrintPreview('class')">🏫 Class Timetable</button>
+                <button id="print-tab-teachers" class="print-tab-btn" onclick="showPrintPreview('teachers')">👨‍🏫 Teacher Timetable</button>
+                <button id="print-tab-individual" class="print-tab-btn" onclick="showPrintPreview('individual')">📄 Individual Slips</button>
+            </div>
+        </div>
+        <div class="print-preview-shell">
+            <div class="print-center-ui print-preview-head"><div><div id="print-preview-title" class="print-preview-title">Class Timetable</div><div class="print-preview-note">On mobile, swipe the timetable left or right.</div></div><div class="print-scale-note">A4 Landscape Preview</div></div>
+            <div id="print-preview-class" class="print-preview-section active">
+        <div class="paper master-paper">
+            <h1 id="master-print-school"></h1>
+
+            <p id="master-print-session"></p>
+
+            <h2>CLASS TIMETABLE</h2>
+
+            <table class="print-table">
+                <thead id="class-print-head"></thead>
+                <tbody id="class-print-body"></tbody>
+            </table>
+
+            <div class="signatures">
+                <div class="signature">
+                    Prepared By
+                </div>
+
+                <div class="signature">
+                    Timetable Incharge
+                </div>
+
+                <div class="signature">
+                    Principal
+                </div>
+            </div>
+        </div>
+
+            </div>
+            <div id="print-preview-teachers" class="print-preview-section">
+        <div class="paper master-paper">
+            <h1 id="teacher-print-school"></h1>
+
+            <p id="teacher-print-session"></p>
+
+            <h2>TEACHER TIMETABLE</h2>
+
+            <table class="print-table">
+                <thead id="teacher-print-head"></thead>
+                <tbody id="teacher-print-body"></tbody>
+            </table>
+
+            <div class="signatures">
+                <div class="signature">Prepared By</div>
+                <div class="signature">Timetable Incharge</div>
+                <div class="signature">Principal</div>
+            </div>
+        </div>
+
+            </div>
+            <div id="print-preview-individual" class="print-preview-section">
+        <!-- INDIVIDUAL TEACHER TIMETABLES -->
+        <div id="individual-teacher-print-area"></div>
+            </div>
+        </div>
+        <div class="print-center-ui print-fab"><button class="btn btn-primary" onclick="printMasterTimetables()">🖨️ Print All Timetables</button></div>
+    </section>
+
+    <script>
+        /*
+         * یہاں اپنا deployed Google Apps Script /exec URL لگائیں۔
+         */
+        const GOOGLE_SCRIPT_URL =
+            "https://script.google.com/macros/s/AKfycbyos-gMyLidhhNDFe9gESMcWdIQGrrbnJ3dJqiUM97oTmZzO8Vq9DLawF5nqMwLD3E/exec";
+
+        const LOCAL_STORAGE_KEY =
+            "smartTimetableLockedVersion1";
+
+        const defaultData = {
+            schoolName: "MY SMART SCHOOL",
+
+            academicSession:
+                "Session: 2026 - 2027",
+
+            totalPeriods: 8,
+
+            classes: [
+                "Class 2",
+                "Class 3",
+                "Class 5",
+                "Class 6",
+                "Class 7",
+                "Class 8",
+                "Class 9",
+                "Class 10"
+            ],
+
+            subjects: [
+                "Math",
+                "English",
+                "Urdu",
+                "Science",
+                "Chemistry",
+                "Physics",
+                "Biology",
+                "Computer",
+                "Islamiat",
+                "Pak Studies"
+            ],
+
+            teachers: [
+                "Shahid Yasin",
+                "M. Ahmad",
+                "Zafar Iqbal",
+                "M. Hassan Nawaz",
+                "Hassan Tariq",
+                "Nasir Ali",
+                "Kaleem Abbas",
+                "Mansoor Ahmad"
+            ],
+
+            incharges: {},
+
+            teacherRoster: {},
+
+            temporaryTimetables: {}
+        };
+
+        let appData = {};
+
+        let masterLocked = false;
+
+        let assignmentMode = "teacher";
+
+        let activeItem = null;
+
+        let cloudSaveTimer = null;
+
+        /*
+         * BASIC UTILITIES
+         */
+
+        function deepClone(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;");
+        }
+
+        function escapeJs(value) {
+            return String(value)
+                .replaceAll("\\", "\\\\")
+                .replaceAll("'", "\\'");
+        }
+
+        function getLocalDateKey() {
+            const date = new Date();
+
+            const pad = number =>
+                String(number).padStart(2, "0");
+
+            return (
+                date.getFullYear() +
+                "-" +
+                pad(date.getMonth() + 1) +
+                "-" +
+                pad(date.getDate())
+            );
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) {
+                return "";
+            }
+
+            const date = new Date(
+                dateString + "T00:00:00"
+            );
+
+            return date.toLocaleDateString(
+                "en-GB",
+                {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                }
+            );
+        }
+
+        /*
+         * DATA INTEGRITY
+         */
+
+        function checkDataIntegrity() {
+            if (!Array.isArray(appData.classes)) {
+                appData.classes = [];
+            }
+
+            if (!Array.isArray(appData.subjects)) {
+                appData.subjects = [];
+            }
+
+            if (!Array.isArray(appData.teachers)) {
+                appData.teachers = [];
+            }
+
+            if (!appData.incharges) {
+                appData.incharges = {};
+            }
+
+            if (!appData.teacherRoster) {
+                appData.teacherRoster = {};
+            }
+
+            if (!appData.temporaryTimetables) {
+                appData.temporaryTimetables = {};
+            }
+
+            appData.classes.forEach(className => {
+                if (!appData.incharges[className]) {
+                    appData.incharges[className] =
+                        "None";
+                }
+            });
+
+            appData.teachers.forEach(teacher => {
+                if (
+                    !Array.isArray(
+                        appData.teacherRoster[teacher]
+                    )
+                ) {
+                    appData.teacherRoster[teacher] = [];
+                }
+
+                while (
+                    appData.teacherRoster[teacher]
+                        .length <
+                    appData.totalPeriods
+                ) {
+                    appData.teacherRoster[
+                        teacher
+                    ].push({
+                        class: "None",
+                        subject: "None"
+                    });
+                }
+
+                appData.teacherRoster[teacher] =
+                    appData.teacherRoster[
+                        teacher
+                    ].slice(
+                        0,
+                        appData.totalPeriods
+                    );
+            });
+        }
+
+        /*
+         * INITIALIZATION
+         */
+
+        window.addEventListener(
+            "load",
+            initializeApplication
+        );
+
+        async function initializeApplication() {
+            const localData =
+                localStorage.getItem(
+                    LOCAL_STORAGE_KEY
+                );
+
+            if (localData) {
+                try {
+                    appData = JSON.parse(localData);
+                } catch (error) {
+                    appData = deepClone(defaultData);
+                }
+            } else {
+                appData = deepClone(defaultData);
+            }
+
+            /*
+             * Google Sheet سے تازہ data load کریں۔
+             */
+            if (
+                !GOOGLE_SCRIPT_URL.startsWith(
+                    "PASTE_"
+                )
+            ) {
+                try {
+                    const response = await fetch(
+                        GOOGLE_SCRIPT_URL +
+                        "?action=getData&_=" +
+                        Date.now()
+                    );
+
+                    const result =
+                        await response.json();
+
+                    const cloudData =
+                        result.data || result;
+
+                    if (
+                        cloudData &&
+                        Array.isArray(
+                            cloudData.teachers
+                        )
+                    ) {
+                        appData = cloudData;
+
+                        delete appData.masterLocked;
+                    }
+
+                    masterLocked = Boolean(
+                        result.masterLocked ??
+                        cloudData.masterLocked ??
+                        false
+                    );
+                } catch (error) {
+                    console.warn(
+                        "Cloud loading failed.",
+                        error
+                    );
+                }
+            }
+
+            checkDataIntegrity();
+
+            document.getElementById(
+                "school-name"
+            ).value = appData.schoolName;
+
+            document.getElementById(
+                "academic-session"
+            ).value =
+                appData.academicSession;
+
+            document.getElementById(
+                "total-periods"
+            ).value =
+                appData.totalPeriods;
+
+            document.getElementById(
+                "temporary-date"
+            ).value = getLocalDateKey();
+
+            activeItem =
+                appData.teachers[0] || null;
+
+            saveLocalData();
+
+            renderEverything();
+            updateMobileNavigation(1);
+        }
+
+        function renderEverything() {
+            renderChips();
+
+            applyMasterLockUI();
+
+            renderAssignment();
+
+            renderTemporaryTimetable();
+
+            renderMasterPrint();
+        }
+
+        const mobilePageNames = {
+            1: "Setup",
+            2: "Assign Duties",
+            3: "Print Center",
+            4: "Temporary Timetable"
+        };
+
+        function toggleMobileMenu() {
+            const drawer = document.getElementById("mobile-drawer");
+            const overlay = document.getElementById("menu-overlay");
+            const toggle = document.getElementById("menu-toggle");
+            const opening = !drawer.classList.contains("open");
+            drawer.classList.toggle("open", opening);
+            overlay.classList.toggle("open", opening);
+            toggle.classList.toggle("open", opening);
+            document.body.classList.toggle("menu-open", opening);
+            toggle.setAttribute("aria-label", opening ? "Close menu" : "Open menu");
+        }
+
+        function closeMobileMenu() {
+            document.getElementById("mobile-drawer")?.classList.remove("open");
+            document.getElementById("menu-overlay")?.classList.remove("open");
+            document.getElementById("menu-toggle")?.classList.remove("open");
+            document.body.classList.remove("menu-open");
+        }
+
+        function navigateFromMenu(pageNumber) {
+            closeMobileMenu();
+            switchPage(pageNumber);
+        }
+
+        function updateMobileNavigation(pageNumber) {
+            document.querySelectorAll(".drawer-nav-btn").forEach(button => button.classList.remove("active"));
+            document.getElementById("drawer-nav" + pageNumber)?.classList.add("active");
+            const currentPage = document.getElementById("mobile-current-page");
+            if (currentPage) currentPage.textContent = mobilePageNames[pageNumber] || "Smart Timetable";
+            const brand = document.getElementById("mobile-brand-title");
+            const drawerSchool = document.getElementById("drawer-school");
+            const drawerSession = document.getElementById("drawer-session");
+            if (brand) brand.textContent = appData.schoolName || "Smart Timetable";
+            if (drawerSchool) drawerSchool.textContent = appData.schoolName || "Smart Timetable";
+            if (drawerSession) drawerSession.textContent = appData.academicSession || "Academic Session";
+        }
+
+        /*
+         * PAGE NAVIGATION
+         */
+
+        async function switchPage(pageNumber) {
+            document
+                .querySelectorAll(".page")
+                .forEach(page => {
+                    page.classList.remove(
+                        "active"
+                    );
+                });
+
+            document
+                .querySelectorAll(
+                    ".navbar button"
+                )
+                .forEach(button => {
+                    button.classList.remove(
+                        "active"
+                    );
+                });
+
+            document
+                .getElementById(
+                    "page" + pageNumber
+                )
+                .classList.add("active");
+
+            document
+                .getElementById(
+                    "nav" + pageNumber
+                )
+                .classList.add("active");
+
+            updateMobileNavigation(pageNumber);
+
+            await refreshMasterLockStatus();
+
+            if (pageNumber === 2) {
+                renderAssignment();
+            }
+
+            if (pageNumber === 3) {
+                renderMasterPrint();
+            }
+
+            if (pageNumber === 4) {
+                renderTemporaryTimetable();
+            }
+
+            window.scrollTo(0, 0);
+        }
+
+        /*
+         * MASTER LOCK
+         */
+
+        function blockIfMasterLocked() {
+            if (!masterLocked) {
+                return false;
+            }
+
+            alert(
+                "🔒 Timetable is locked.\n\n" +
+                "Only temporary leave and " +
+                "substitute duties may be changed."
+            );
+
+            return true;
+        }
+
+        function applyMasterLockUI() {
+            const lockBar =
+                document.getElementById(
+                    "master-lock-bar"
+                );
+
+            const title =
+                document.getElementById(
+                    "master-lock-title"
+                );
+
+            const message =
+                document.getElementById(
+                    "master-lock-message"
+                );
+
+            const button =
+                document.getElementById(
+                    "master-lock-button"
+                );
+
+            lockBar.classList.toggle(
+                "locked",
+                masterLocked
+            );
+
+            if (masterLocked) {
+                title.textContent =
+                    "🔒 Timetable Locked";
+
+                message.textContent =
+                    "Only temporary leave and " +
+                    "substitute duties can be changed.";
+
+                button.textContent =
+                    "🔓 Unlock with PIN";
+            } else {
+                title.textContent =
+                    "🔓 Timetable Unlocked";
+
+                message.textContent =
+                    "Timetable can be edited.";
+
+                button.textContent =
+                    "🔒 Lock Timetable";
+            }
+
+            document
+                .getElementById(
+                    "master-setup-area"
+                )
+                .classList.toggle(
+                    "master-locked-ui",
+                    masterLocked
+                );
+
+            document
+                .getElementById(
+                    "master-assignment-area"
+                )
+                .classList.toggle(
+                    "master-locked-ui",
+                    masterLocked
+                );
+
+            const drawerStatus = document.getElementById("drawer-lock-status");
+            const drawerTitle = document.getElementById("drawer-lock-title");
+            if (drawerStatus) drawerStatus.classList.toggle("locked", masterLocked);
+            if (drawerTitle) drawerTitle.textContent = masterLocked ? "Timetable Locked" : "Timetable Unlocked";
+            if (appData && appData.schoolName) updateMobileNavigation(
+                Number(document.querySelector(".page.active")?.id.replace("page", "")) || 1
+            );
+        }
+
+        async function toggleMasterLock() {
+            if (
+                GOOGLE_SCRIPT_URL.startsWith(
+                    "PASTE_"
+                )
+            ) {
+                alert(
+                    "پہلے HTML میں Google Apps " +
+                    "Script کا /exec URL لگائیں۔"
+                );
+
+                return;
+            }
+
+            const requiredStatus =
+                !masterLocked;
+
+            const pin = prompt(
+                requiredStatus
+                    ? "Timetable lock کرنے " +
+                      "کے لیے administrator PIN لکھیں:"
+                    : "Timetable unlock کرنے " +
+                      "کے لیے administrator PIN لکھیں:"
+            );
+
+            if (
+                pin === null ||
+                pin.trim() === ""
+            ) {
+                return;
+            }
+
+            const button =
+                document.getElementById(
+                    "master-lock-button"
+                );
+
+            button.disabled = true;
+            button.textContent =
+                "Please wait...";
+
+            try {
+                const result =
+                    await postToGoogleSheets({
+                        action:
+                            "setMasterLock",
+
+                        locked:
+                            requiredStatus,
+
+                        pin: pin.trim()
+                    });
+
+                if (!result.success) {
+                    alert(
+                        result.message ||
+                        "Lock request failed."
+                    );
+
+                    return;
+                }
+
+                masterLocked = Boolean(
+                    result.masterLocked
+                );
+
+                applyMasterLockUI();
+
+                alert(
+                    result.message ||
+                    (
+                        masterLocked
+                            ? "Timetable locked."
+                            : "Timetable unlocked."
+                    )
+                );
+            } catch (error) {
+                console.error(error);
+
+                alert(
+                    "Google Apps Script سے " +
+                    "رابطہ نہیں ہو سکا۔"
+                );
+            } finally {
+                button.disabled = false;
+
+                applyMasterLockUI();
+            }
+        }
+
+        async function refreshMasterLockStatus() {
+            if (
+                GOOGLE_SCRIPT_URL.startsWith(
+                    "PASTE_"
+                )
+            ) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    GOOGLE_SCRIPT_URL +
+                    "?action=getLockStatus&_=" +
+                    Date.now()
+                );
+
+                const result =
+                    await response.json();
+
+                if (result.success) {
+                    masterLocked = Boolean(
+                        result.masterLocked
+                    );
+
+                    applyMasterLockUI();
+                }
+            } catch (error) {
+                console.warn(
+                    "Lock status loading failed.",
+                    error
+                );
+            }
+        }
+
+        /*
+         * SETTINGS AND LISTS
+         */
+
+        function updateSettings() {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            appData.schoolName =
+                document.getElementById(
+                    "school-name"
+                ).value ||
+                "MY SMART SCHOOL";
+
+            appData.academicSession =
+                document.getElementById(
+                    "academic-session"
+                ).value ||
+                "Session: 2026 - 2027";
+
+            const periodValue =
+                Number(
+                    document.getElementById(
+                        "total-periods"
+                    ).value
+                );
+
+            if (
+                periodValue >= 1 &&
+                periodValue <= 15
+            ) {
+                appData.totalPeriods =
+                    periodValue;
+            }
+
+            checkDataIntegrity();
+
+            saveMasterData();
+        }
+
+        function addItem(type, inputId) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            const input =
+                document.getElementById(
+                    inputId
+                );
+
+            const value =
+                input.value.trim();
+
+            if (!value) {
+                return;
+            }
+
+            if (
+                appData[type].includes(value)
+            ) {
+                alert(
+                    '"' +
+                    value +
+                    '" already exists.'
+                );
+
+                return;
+            }
+
+            appData[type].push(value);
+
+            if (type === "teachers") {
+                appData.teacherRoster[value] =
+                    [];
+            }
+
+            if (type === "classes") {
+                appData.incharges[value] =
+                    "None";
+            }
+
+            checkDataIntegrity();
+
+            input.value = "";
+
+            saveMasterData();
+
+            renderEverything();
+        }
+
+        function renameItem(type, oldValue) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            let newValue = prompt(
+                "Enter new name:",
+                oldValue
+            );
+
+            if (!newValue) {
+                return;
+            }
+
+            newValue = newValue.trim();
+
+            if (
+                !newValue ||
+                newValue === oldValue
+            ) {
+                return;
+            }
+
+            if (
+                appData[type].includes(
+                    newValue
+                )
+            ) {
+                alert(
+                    '"' +
+                    newValue +
+                    '" already exists.'
+                );
+
+                return;
+            }
+
+            const index =
+                appData[type].indexOf(
+                    oldValue
+                );
+
+            appData[type][index] =
+                newValue;
+
+            if (type === "teachers") {
+                appData.teacherRoster[
+                    newValue
+                ] =
+                    appData.teacherRoster[
+                        oldValue
+                    ];
+
+                delete appData.teacherRoster[
+                    oldValue
+                ];
+
+                Object.keys(
+                    appData.incharges
+                ).forEach(className => {
+                    if (
+                        appData.incharges[
+                            className
+                        ] === oldValue
+                    ) {
+                        appData.incharges[
+                            className
+                        ] = newValue;
+                    }
+                });
+            }
+
+            if (type === "classes") {
+                appData.incharges[
+                    newValue
+                ] =
+                    appData.incharges[
+                        oldValue
+                    ] || "None";
+
+                delete appData.incharges[
+                    oldValue
+                ];
+
+                appData.teachers.forEach(
+                    teacher => {
+                        appData.teacherRoster[
+                            teacher
+                        ].forEach(duty => {
+                            if (
+                                duty.class ===
+                                oldValue
+                            ) {
+                                duty.class =
+                                    newValue;
+                            }
+                        });
+                    }
+                );
+            }
+
+            if (type === "subjects") {
+                appData.teachers.forEach(
+                    teacher => {
+                        appData.teacherRoster[
+                            teacher
+                        ].forEach(duty => {
+                            if (
+                                duty.subject ===
+                                oldValue
+                            ) {
+                                duty.subject =
+                                    newValue;
+                            }
+                        });
+                    }
+                );
+            }
+
+            activeItem = newValue;
+
+            saveMasterData();
+
+            renderEverything();
+        }
+
+        function removeItem(type, value) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            if (
+                !confirm(
+                    'Delete "' +
+                    value +
+                    '"?'
+                )
+            ) {
+                return;
+            }
+
+            appData[type] =
+                appData[type].filter(
+                    item => item !== value
+                );
+
+            if (type === "teachers") {
+                delete appData.teacherRoster[
+                    value
+                ];
+
+                Object.keys(
+                    appData.incharges
+                ).forEach(className => {
+                    if (
+                        appData.incharges[
+                            className
+                        ] === value
+                    ) {
+                        appData.incharges[
+                            className
+                        ] = "None";
+                    }
+                });
+            }
+
+            if (type === "classes") {
+                delete appData.incharges[
+                    value
+                ];
+
+                appData.teachers.forEach(
+                    teacher => {
+                        appData.teacherRoster[
+                            teacher
+                        ].forEach(duty => {
+                            if (
+                                duty.class ===
+                                value
+                            ) {
+                                duty.class =
+                                    "None";
+
+                                duty.subject =
+                                    "None";
+                            }
+                        });
+                    }
+                );
+            }
+
+            activeItem = null;
+
+            saveMasterData();
+
+            renderEverything();
+        }
+
+        function renderChips() {
+            const types = [
+                "classes",
+                "subjects",
+                "teachers"
+            ];
+
+            types.forEach(type => {
+                const container =
+                    document.getElementById(
+                        type + "-chips"
+                    );
+
+                container.innerHTML =
+                    appData[type]
+                        .map(value => {
+                            const jsValue =
+                                escapeJs(value);
+
+                            return `
+                                <span class="chip">
+                                    ${escapeHtml(value)}
+
+                                    <button
+                                        type="button"
+                                        onclick="
+                                            renameItem(
+                                                '${type}',
+                                                '${jsValue}'
+                                            )
+                                        "
+                                    >
+                                        ✏️
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onclick="
+                                            removeItem(
+                                                '${type}',
+                                                '${jsValue}'
+                                            )
+                                        "
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            `;
+                        })
+                        .join("");
+            });
+
+            const counts = {
+                classes: appData.classes.length,
+                subjects: appData.subjects.length,
+                teachers: appData.teachers.length
+            };
+            Object.entries(counts).forEach(([type, count]) => {
+                const badge = document.getElementById(type + "-count");
+                if (badge) badge.textContent = count;
+            });
+            const classTotal = document.getElementById("setup-class-total");
+            const subjectTotal = document.getElementById("setup-subject-total");
+            const teacherTotal = document.getElementById("setup-teacher-total");
+            if (classTotal) classTotal.textContent = counts.classes;
+            if (subjectTotal) subjectTotal.textContent = counts.subjects;
+            if (teacherTotal) teacherTotal.textContent = counts.teachers;
+        }
+
+        /*
+         * ASSIGNMENT SYSTEM
+         */
+
+        function setAssignmentMode(mode) {
+            assignmentMode = mode;
+            document.querySelectorAll(".assign-mode-btn").forEach(button => button.classList.remove("active"));
+            document.getElementById("assign-mode-" + mode)?.classList.add("active");
+            if (mode === "teacher") activeItem = appData.teachers[0] || null;
+            if (mode === "class") activeItem = appData.classes[0] || null;
+            renderAssignment();
+        }
+
+        function selectAssignmentItem(value) {
+            activeItem = value;
+            renderAssignment();
+        }
+
+        function getTeacherLoad(teacher) {
+            return (appData.teacherRoster[teacher] || []).filter(duty => duty.class !== "None").length;
+        }
+
+        function getClassLoad(className) {
+            let count = 0;
+            for (let period = 0; period < appData.totalPeriods; period++) {
+                if (appData.teachers.some(teacher => appData.teacherRoster[teacher]?.[period]?.class === className)) count++;
+            }
+            return count;
+        }
+
+        function updateAssignmentSummary(assignedCount, totalCount) {
+            const progress = document.getElementById("assignment-progress");
+            const percent = totalCount ? Math.round((assignedCount / totalCount) * 100) : 0;
+            if (progress) progress.innerHTML = `<div class="assign-progress-text"><span>Assigned ${assignedCount}/${totalCount}</span><span>${percent}%</span></div><div class="assign-progress-track"><div class="assign-progress-fill" style="width:${percent}%"></div></div>`;
+            document.getElementById("assign-teacher-total").textContent = appData.teachers.length;
+            document.getElementById("assign-class-total").textContent = appData.classes.length;
+            document.getElementById("assign-period-total").textContent = appData.totalPeriods;
+        }
+
+        function renderAssignment() {
+            const sidebar = document.getElementById("assignment-sidebar");
+            const cards = document.getElementById("assignment-cards");
+            const title = document.getElementById("assignment-title");
+            const subtitle = document.getElementById("assignment-subtitle");
+            document.querySelectorAll(".assign-mode-btn").forEach(button => button.classList.remove("active"));
+            document.getElementById("assign-mode-" + assignmentMode)?.classList.add("active");
+
+            if (assignmentMode === "incharge") {
+                sidebar.style.display = "none";
+                title.textContent = "Class Incharges";
+                subtitle.textContent = "Select the main teacher for every class.";
+                cards.className = "cards incharge-grid";
+                cards.innerHTML = appData.classes.length ? appData.classes.map(className => `
+                    <div class="card incharge-card">
+                        <div class="incharge-class">${escapeHtml(className)}</div>
+                        <div class="incharge-note">Main class teacher</div>
+                        <select onchange="updateIncharge('${escapeJs(className)}', this.value)">
+                            <option value="None">Select Incharge</option>
+                            ${appData.teachers.map(teacher => `<option value="${escapeHtml(teacher)}" ${appData.incharges[className] === teacher ? "selected" : ""}>${escapeHtml(teacher)}</option>`).join("")}
+                        </select>
+                    </div>`).join("") : `<div class="empty-assignment">Add classes first.</div>`;
+                updateAssignmentSummary(appData.classes.filter(c => appData.incharges[c] && appData.incharges[c] !== "None").length, appData.classes.length);
+                applyMasterLockUI();
+                initializeSmartSelects(cards);
+                return;
+            }
+
+            sidebar.style.display = "block";
+            cards.className = "cards";
+            const list = assignmentMode === "teacher" ? appData.teachers : appData.classes;
+            if (!activeItem || !list.includes(activeItem)) activeItem = list[0] || null;
+            const sidebarLabel = assignmentMode === "teacher" ? "Instructor List" : "Class List";
+            sidebar.innerHTML = `<div class="assign-sidebar-head"><div class="assign-sidebar-title">${sidebarLabel}</div><div class="assign-sidebar-note">Tap a record to edit periods</div></div>` + list.map(item => {
+                const load = assignmentMode === "teacher" ? getTeacherLoad(item) : getClassLoad(item);
+                return `<button class="sidebar-button ${item === activeItem ? "active" : ""}" onclick="selectAssignmentItem('${escapeJs(item)}')"><span class="sidebar-name">${escapeHtml(item)}</span><span class="sidebar-load">${load}/${appData.totalPeriods}</span></button>`;
+            }).join("");
+
+            title.textContent = activeItem || "No item selected";
+            subtitle.textContent = assignmentMode === "teacher" ? "Assign class and subject for each period." : "Assign teacher and subject. Busy teachers are marked in red.";
+            cards.innerHTML = "";
+            if (!activeItem) {
+                cards.innerHTML = `<div class="empty-assignment">No records available. Add records from Setup first.</div>`;
+                updateAssignmentSummary(0, appData.totalPeriods);
+                return;
+            }
+            if (assignmentMode === "teacher") renderTeacherAssignment();
+            else renderClassAssignment();
+            applyMasterLockUI();
+        }
+
+        function renderTeacherAssignment() {
+            const cards = document.getElementById("assignment-cards");
+            let html = "";
+            let assigned = 0;
+            for (let period = 0; period < appData.totalPeriods; period++) {
+                const duty = appData.teacherRoster[activeItem]?.[period] || {class:"None",subject:"None"};
+                const isAssigned = duty.class !== "None";
+                if (isAssigned) assigned++;
+                html += `<div class="card ${isAssigned ? "period-card-assigned" : "period-card-free"}">
+                    <div class="period-head"><span class="period-badge">Period ${period + 1}</span><span class="period-state ${isAssigned ? "assigned" : ""}">${isAssigned ? "Assigned" : "Free"}</span></div>
+                    <label class="label">Class</label>
+                    <select onchange="updateTeacherDuty(${period}, 'class', this.value)"><option value="None">Free / No Class</option>${appData.classes.map(c => `<option value="${escapeHtml(c)}" ${duty.class === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}</select>
+                    <label class="label">Subject</label>
+                    <select ${!isAssigned ? "disabled" : ""} onchange="updateTeacherDuty(${period}, 'subject', this.value)"><option value="None">Select Subject</option>${appData.subjects.map(subject => `<option value="${escapeHtml(subject)}" ${duty.subject === subject ? "selected" : ""}>${escapeHtml(subject)}</option>`).join("")}</select>
+                </div>`;
+            }
+            cards.innerHTML = html;
+            updateAssignmentSummary(assigned, appData.totalPeriods);
+            initializeSmartSelects(cards);
+        }
+
+        function renderClassAssignment() {
+            const cards = document.getElementById("assignment-cards");
+            let html = "";
+
+            for (let period = 0; period < appData.totalPeriods; period++) {
+                const assignedTeachers = appData.teachers.filter(teacher => {
+                    const duty = appData.teacherRoster[teacher]?.[period];
+                    return duty && duty.class === activeItem;
+                });
+
+                const selectedTeacher = assignedTeachers[0] || "None";
+                const selectedDuty = selectedTeacher === "None"
+                    ? { class: "None", subject: "None" }
+                    : (appData.teacherRoster[selectedTeacher]?.[period] || { class: "None", subject: "None" });
+                const selectedSubject = selectedDuty.subject || "None";
+
+                // Detect corrupted/duplicate conflict data for this class period.
+                const duplicateTeachers = assignedTeachers.length > 1;
+                const selectedBusyElsewhere = selectedTeacher !== "None" &&
+                    selectedDuty.class !== "None" &&
+                    selectedDuty.class !== activeItem;
+                const hasConflict = duplicateTeachers || selectedBusyElsewhere;
+                const isAssigned = selectedTeacher !== "None";
+
+                let teacherOptions = `
+                    <option value="None" data-status="none">Free / No Teacher</option>
+                `;
+
+                appData.teachers.forEach(teacher => {
+                    const duty = appData.teacherRoster[teacher]?.[period] || {
+                        class: "None",
+                        subject: "None"
+                    };
+                    const busy = duty.class !== "None" && duty.class !== activeItem;
+                    const assignedHere = duty.class === activeItem;
+                    const status = busy ? "busy" : (assignedHere ? "assigned" : "free");
+                    const statusText = busy ? duty.class : (assignedHere ? "Assigned" : "Free");
+                    const displayText = busy
+                        ? `${teacher} | Busy: ${duty.class}`
+                        : assignedHere
+                            ? `${teacher} | Assigned Here`
+                            : `${teacher} | Free`;
+
+                    teacherOptions += `
+                        <option
+                            value="${escapeHtml(teacher)}"
+                            data-status="${status}"
+                            data-status-text="${escapeHtml(statusText)}"
+                            ${selectedTeacher === teacher ? "selected" : ""}
+                        >${escapeHtml(displayText)}</option>
+                    `;
+                });
+
+                const subjectOptions = `
+                    <option value="None">Select Subject</option>
+                    ${appData.subjects.map(subject => `
+                        <option value="${escapeHtml(subject)}"
+                            ${selectedSubject === subject ? "selected" : ""}>
+                            ${escapeHtml(subject)}
+                        </option>
+                    `).join("")}
+                `;
+
+                const cardClass = hasConflict
+                    ? "period-card-busy"
+                    : (isAssigned ? "period-card-assigned" : "period-card-free");
+                const stateClass = hasConflict ? "busy" : (isAssigned ? "assigned" : "");
+                const stateText = hasConflict ? "Busy Conflict" : (isAssigned ? "Assigned" : "Free");
+
+                html += `
+                    <div class="card ${cardClass}">
+                        <div class="period-head">
+                            <span class="period-badge">Period ${period + 1}</span>
+                            <span class="period-state ${stateClass}">${stateText}</span>
+                        </div>
+                        ${hasConflict ? `<div class="busy-period-note">⚠️ More than one duty is stored for this period. Select the correct teacher to resolve it.</div>` : ""}
+                        <label class="label">Teacher</label>
+                        <select data-dropdown-type="teacher-status"
+                            onchange="updateClassTeacher(${period}, '${escapeJs(selectedTeacher)}', this.value)">
+                            ${teacherOptions}
+                        </select>
+                        <label class="label">Subject</label>
+                        <select ${selectedTeacher === "None" ? "disabled" : ""}
+                            onchange="updateClassSubject(${period}, '${escapeJs(selectedTeacher)}', this.value)">
+                            ${subjectOptions}
+                        </select>
+                    </div>
+                `;
+            }
+
+            cards.innerHTML = html;
+            initializeSmartSelects(cards);
+        }
+
+        function updateIncharge(
+            className,
+            teacher
+        ) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            appData.incharges[className] =
+                teacher;
+
+            saveMasterData();
+        }
+
+        function updateTeacherDuty(
+            period,
+            field,
+            value
+        ) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            appData.teacherRoster[
+                activeItem
+            ][period][field] = value;
+
+            if (
+                field === "class" &&
+                value === "None"
+            ) {
+                appData.teacherRoster[
+                    activeItem
+                ][period].subject =
+                    "None";
+            }
+
+            saveMasterData();
+
+            renderAssignment();
+        }
+
+        function updateClassTeacher(period, oldTeacher, newTeacher) {
+            if (blockIfMasterLocked()) return;
+            const oldDuty = oldTeacher !== "None" ? appData.teacherRoster[oldTeacher]?.[period] : null;
+            const previousSubject = oldDuty?.subject || "None";
+
+            if (newTeacher !== "None") {
+                const newDuty = appData.teacherRoster[newTeacher]?.[period] || {class:"None",subject:"None"};
+                const busy = newDuty.class !== "None" && newDuty.class !== activeItem;
+                if (busy && !confirm(`⚠️ ${newTeacher} is busy in ${newDuty.class}, Period ${period + 1}.\n\nOverride that duty and assign to ${activeItem}?`)) {
+                    renderAssignment();
+                    return;
+                }
+            }
+
+            if (oldTeacher !== "None" && oldTeacher !== newTeacher) {
+                appData.teacherRoster[oldTeacher][period] = {class:"None",subject:"None"};
+            }
+            if (newTeacher !== "None") {
+                appData.teacherRoster[newTeacher][period] = {
+                    class: activeItem,
+                    subject: oldTeacher === newTeacher ? (oldDuty?.subject || "None") : previousSubject
+                };
+            }
+            saveMasterData();
+            renderAssignment();
+        }
+
+        function updateClassSubject(
+            period,
+            teacher,
+            subject
+        ) {
+            if (blockIfMasterLocked()) {
+                return;
+            }
+
+            if (
+                !teacher ||
+                teacher === "None"
+            ) {
+                return;
+            }
+
+            appData.teacherRoster[
+                teacher
+            ][period].subject =
+                subject;
+
+            saveMasterData();
+
+            renderAssignment();
+        }
+
+        /*
+         * TEMPORARY TIMETABLE
+         */
+
+        function getTemporaryRecord() {
+            const dateInput = document.getElementById("temporary-date");
+            const dateKey = (dateInput && dateInput.value) || getLocalDateKey();
+
+            if (!appData.temporaryTimetables || typeof appData.temporaryTimetables !== "object") {
+                appData.temporaryTimetables = {};
+            }
+            if (!appData.temporaryTimetables[dateKey] || typeof appData.temporaryTimetables[dateKey] !== "object") {
+                appData.temporaryTimetables[dateKey] = {
+                    leaveTeachers: [],
+                    substitutions: {}
+                };
+            }
+
+            const record = appData.temporaryTimetables[dateKey];
+            if (!Array.isArray(record.leaveTeachers)) record.leaveTeachers = [];
+            if (!record.substitutions || typeof record.substitutions !== "object") record.substitutions = {};
+
+            // Remove deleted, duplicate, blank and invalid teacher names from leave data.
+            record.leaveTeachers = [...new Set(record.leaveTeachers)]
+                .filter(teacher => typeof teacher === "string")
+                .map(teacher => teacher.trim())
+                .filter(teacher => teacher && appData.teachers.includes(teacher));
+
+            // Remove invalid substitution entries and explicit None values.
+            Object.keys(record.substitutions).forEach(key => {
+                const substitute = record.substitutions[key];
+                const absentTeacher = key.split("__")[0];
+                if (!record.leaveTeachers.includes(absentTeacher) ||
+                    substitute === "None" ||
+                    !appData.teachers.includes(substitute)) {
+                    delete record.substitutions[key];
+                }
+            });
+
+            return record;
+        }
+
+        function getAffectedDuties() {
+            const record =
+                getTemporaryRecord();
+
+            const duties = [];
+
+            record.leaveTeachers.forEach(
+                absentTeacher => {
+                    const teacherDuties =
+                        appData.teacherRoster[
+                            absentTeacher
+                        ] || [];
+
+                    teacherDuties.forEach(
+                        (duty, period) => {
+                            if (
+                                duty.class !==
+                                "None"
+                            ) {
+                                duties.push({
+                                    absentTeacher:
+                                        absentTeacher,
+
+                                    period:
+                                        period,
+
+                                    className:
+                                        duty.class,
+
+                                    subject:
+                                        duty.subject
+                                });
+                            }
+                        }
+                    );
+                }
+            );
+
+            duties.sort(
+                (first, second) =>
+                    first.period -
+                    second.period
+            );
+
+            return duties;
+        }
+
+        function toggleTeacherLeave(
+            teacher,
+            checked
+        ) {
+            const record =
+                getTemporaryRecord();
+
+            if (checked) {
+                if (
+                    !record.leaveTeachers
+                        .includes(teacher)
+                ) {
+                    record.leaveTeachers.push(
+                        teacher
+                    );
+                }
+            } else {
+                record.leaveTeachers =
+                    record.leaveTeachers.filter(
+                        item =>
+                            item !== teacher
+                    );
+
+                Object.keys(
+                    record.substitutions
+                ).forEach(key => {
+                    if (
+                        key.startsWith(
+                            teacher + "__"
+                        )
+                    ) {
+                        delete record
+                            .substitutions[key];
+                    }
+                });
+            }
+
+            saveTemporaryData();
+
+            renderTemporaryTimetable();
+        }
+
+        function isTeacherAvailable(
+            teacher,
+            period,
+            currentKey
+        ) {
+            const record =
+                getTemporaryRecord();
+
+            if (
+                record.leaveTeachers
+                    .includes(teacher)
+            ) {
+                return false;
+            }
+
+            const permanentDuty =
+                appData.teacherRoster[
+                    teacher
+                ][period];
+
+            if (
+                permanentDuty &&
+                permanentDuty.class !==
+                    "None"
+            ) {
+                return false;
+            }
+
+            const alreadyAssigned =
+                Object.entries(
+                    record.substitutions
+                ).some(
+                    ([
+                        assignmentKey,
+                        assignedTeacher
+                    ]) => {
+                        const keyPeriod =
+                            Number(
+                                assignmentKey
+                                    .split("__")
+                                    .pop()
+                            );
+
+                        return (
+                            assignmentKey !==
+                                currentKey &&
+                            assignedTeacher ===
+                                teacher &&
+                            keyPeriod === period
+                        );
+                    }
+                );
+
+            return !alreadyAssigned;
+        }
+
+        function assignSubstitute(
+            absentTeacher,
+            period,
+            substituteTeacher
+        ) {
+            const record =
+                getTemporaryRecord();
+
+            const key =
+                absentTeacher +
+                "__" +
+                period;
+
+            if (
+                substituteTeacher ===
+                "None"
+            ) {
+                delete record.substitutions[
+                    key
+                ];
+            } else {
+                if (
+                    !isTeacherAvailable(
+                        substituteTeacher,
+                        period,
+                        key
+                    )
+                ) {
+                    alert(
+                        substituteTeacher +
+                        " is not available " +
+                        "in Period " +
+                        (period + 1) +
+                        "."
+                    );
+
+                    renderTemporaryTimetable();
+
+                    return;
+                }
+
+                record.substitutions[key] =
+                    substituteTeacher;
+            }
+
+            saveTemporaryData();
+
+            renderTemporaryTimetable();
+        }
+
+        function autoAssignSubstitutes() {
+            const record =
+                getTemporaryRecord();
+
+            const duties =
+                getAffectedDuties();
+
+            if (!duties.length) {
+                alert(
+                    "No affected duties found."
+                );
+
+                return;
+            }
+
+            const assignmentCount = {};
+
+            appData.teachers.forEach(
+                teacher => {
+                    assignmentCount[
+                        teacher
+                    ] = 0;
+                }
+            );
+
+            Object.values(
+                record.substitutions
+            ).forEach(teacher => {
+                if (
+                    teacher &&
+                    teacher !== "None"
+                ) {
+                    assignmentCount[
+                        teacher
+                    ] =
+                        (
+                            assignmentCount[
+                                teacher
+                            ] || 0
+                        ) + 1;
+                }
+            });
+
+            duties.forEach(duty => {
+                const key =
+                    duty.absentTeacher +
+                    "__" +
+                    duty.period;
+
+                if (
+                    record.substitutions[key]
+                ) {
+                    return;
+                }
+
+                const availableTeachers =
+                    appData.teachers.filter(
+                        teacher =>
+                            isTeacherAvailable(
+                                teacher,
+                                duty.period,
+                                key
+                            )
+                    );
+
+                availableTeachers.sort(
+                    (first, second) => {
+                        const difference =
+                            (
+                                assignmentCount[
+                                    first
+                                ] || 0
+                            ) -
+                            (
+                                assignmentCount[
+                                    second
+                                ] || 0
+                            );
+
+                        if (
+                            difference !== 0
+                        ) {
+                            return difference;
+                        }
+
+                        return first.localeCompare(
+                            second
+                        );
+                    }
+                );
+
+                if (
+                    availableTeachers.length
+                ) {
+                    const selectedTeacher =
+                        availableTeachers[0];
+
+                    record.substitutions[
+                        key
+                    ] =
+                        selectedTeacher;
+
+                    assignmentCount[
+                        selectedTeacher
+                    ]++;
+                }
+            });
+
+            saveTemporaryData();
+
+            renderTemporaryTimetable();
+        }
+
+        function clearTemporaryDate() {
+            const dateKey =
+                document.getElementById(
+                    "temporary-date"
+                ).value;
+
+            if (
+                !confirm(
+                    "Clear temporary timetable " +
+                    "for " +
+                    formatDate(dateKey) +
+                    "?"
+                )
+            ) {
+                return;
+            }
+
+            delete appData
+                .temporaryTimetables[
+                dateKey
+            ];
+
+            saveTemporaryData();
+
+            renderTemporaryTimetable();
+        }
+
+        function filterTemporaryTeachers() {
+            const query = (document.getElementById("temp-teacher-search")?.value || "").trim().toLowerCase();
+            document.querySelectorAll("#leave-teacher-list label").forEach(label => {
+                label.style.display = label.dataset.teacherName.includes(query) ? "flex" : "none";
+            });
+        }
+
+        function clearLeaveTeachers() {
+            const record = getTemporaryRecord();
+            if (!record.leaveTeachers.length) {
+                renderTemporaryTimetable();
+                return;
+            }
+            if (!confirm("Remove all teachers from leave for the selected date?")) return;
+            record.leaveTeachers = [];
+            record.substitutions = {};
+            saveTemporaryData();
+            renderTemporaryTimetable();
+        }
+
+        function clearSubstituteAssignments() {
+            const record = getTemporaryRecord();
+            if (!Object.keys(record.substitutions || {}).length) return;
+            if (!confirm("Clear all substitute assignments for this date? Leave selections will remain.")) return;
+            record.substitutions = {};
+            saveTemporaryData();
+            renderTemporaryTimetable();
+        }
+
+        function renderTemporaryTimetable() {
+            const record = getTemporaryRecord();
+            const duties = getAffectedDuties();
+            const leaveList = document.getElementById("leave-teacher-list");
+            const selectedCount = record.leaveTeachers.length;
+            const assignedCount = duties.filter(duty => {
+                const substitute = record.substitutions[duty.absentTeacher + "__" + duty.period];
+                return substitute && substitute !== "None" && appData.teachers.includes(substitute);
+            }).length;
+            const pendingCount = Math.max(0, duties.length - assignedCount);
+
+            leaveList.innerHTML = appData.teachers.map(teacher => {
+                const onLeave = record.leaveTeachers.includes(teacher);
+                const permanentLoad = (appData.teacherRoster[teacher] || []).filter(duty => duty.class !== "None").length;
+                return `<label class="${onLeave ? "temp-on-leave" : ""}" data-teacher-name="${escapeHtml(teacher.toLowerCase())}">
+                    <span class="leave-teacher-name"><input type="checkbox" ${onLeave ? "checked" : ""} onchange="toggleTeacherLeave('${escapeJs(teacher)}', this.checked)"><span>${escapeHtml(teacher)}</span></span>
+                    <span class="leave-duty-count">${permanentLoad}/${appData.totalPeriods}</span>
+                </label>`;
+            }).join("");
+
+            document.getElementById("leave-count").textContent = selectedCount;
+            document.getElementById("affected-count").textContent = duties.length;
+            document.getElementById("temp-assigned-count").textContent = assignedCount;
+            document.getElementById("temp-pending-count").textContent = pendingCount;
+            document.getElementById("temp-leave-badge").textContent = selectedCount === 1
+                ? "1 selected"
+                : `${selectedCount} selected`;
+
+            const percent = duties.length ? Math.round((assignedCount / duties.length) * 100) : 0;
+            document.getElementById("temp-progress").innerHTML = `<div class="temp-progress-head"><span>Substitution progress ${assignedCount}/${duties.length}</span><span>${percent}%</span></div><div class="temp-progress-track"><div class="temp-progress-fill" style="width:${percent}%"></div></div>`;
+
+            const cards = document.getElementById("temporary-cards");
+            if (!selectedCount) {
+                cards.innerHTML = `<div class="temp-empty"><div class="temp-empty-icon">🏖️</div><strong>No teacher selected</strong><div>Select teachers on leave from the left panel.</div></div>`;
+            } else if (!duties.length) {
+                cards.innerHTML = `<div class="temp-empty"><div class="temp-empty-icon">✅</div><strong>No affected periods</strong><div>The selected teachers have no permanent duties.</div></div>`;
+            } else {
+                cards.innerHTML = duties.map(duty => {
+                    const key = duty.absentTeacher + "__" + duty.period;
+                    const assignedTeacher = record.substitutions[key] || "None";
+                    const availableTeachers = appData.teachers.filter(teacher => isTeacherAvailable(teacher, duty.period, key) || teacher === assignedTeacher);
+                    return `<div class="card temporary-duty-card ${assignedTeacher !== "None" ? "is-assigned" : ""}">
+                        <div class="temp-duty-top"><span class="period-badge">Period ${duty.period + 1}</span><span class="temp-duty-status ${assignedTeacher !== "None" ? "done" : ""}">${assignedTeacher !== "None" ? "Assigned" : "Pending"}</span></div>
+                        <div class="temp-duty-class">${escapeHtml(duty.className)}</div><div class="temp-duty-subject">${escapeHtml(duty.subject === "None" ? "No subject" : duty.subject)}</div>
+                        <div class="absent-name">⚠️ Absent: ${escapeHtml(duty.absentTeacher)}</div>
+                        <label class="label">Available Substitute</label>
+                        <select onchange="assignSubstitute('${escapeJs(duty.absentTeacher)}', ${duty.period}, this.value)"><option value="None">Select substitute</option>${availableTeachers.map(teacher => `<option value="${escapeHtml(teacher)}" ${assignedTeacher === teacher ? "selected" : ""}>${escapeHtml(teacher)}</option>`).join("")}</select>
+                    </div>`;
+                }).join("");
+            }
+
+            renderTemporaryPrint(record, duties);
+            initializeSmartSelects(cards);
+            filterTemporaryTeachers();
+        }
+
+        function renderTemporaryPrint(
+            record,
+            duties
+        ) {
+            const dateKey =
+                document.getElementById(
+                    "temporary-date"
+                ).value;
+
+            document.getElementById(
+                "temporary-print-school"
+            ).textContent =
+                appData.schoolName;
+
+            document.getElementById(
+                "temporary-print-heading"
+            ).textContent =
+                appData.academicSession +
+                " | Temporary Timetable: " +
+                formatDate(dateKey);
+
+            document.getElementById(
+                "temporary-print-leaves"
+            ).textContent =
+                "Teachers on Leave: " +
+                (
+                    record.leaveTeachers
+                        .join(", ") ||
+                    "None"
+                );
+
+            const tableBody =
+                document.getElementById(
+                    "temporary-print-body"
+                );
+
+            if (!duties.length) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            No affected duties.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+            tableBody.innerHTML =
+                duties
+                    .map(duty => {
+                        const key =
+                            duty.absentTeacher +
+                            "__" +
+                            duty.period;
+
+                        const substitute =
+                            record
+                                .substitutions[
+                                key
+                            ] ||
+                            "Not Assigned";
+
+                        return `
+                            <tr>
+                                <td>
+                                    Period ${
+                                        duty.period + 1
+                                    }
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        duty.className
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        duty.subject
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        duty.absentTeacher
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        substitute
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${
+                                        substitute ===
+                                        "Not Assigned"
+                                            ? "Pending"
+                                            : "Assigned"
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                    })
+                    .join("");
+        }
+
+        /*
+         * MASTER PRINT
+         */
+
+        function showPrintPreview(type) {
+            const allowed = ["class", "teachers", "individual"];
+            if (!allowed.includes(type)) type = "class";
+            document.querySelectorAll(".print-preview-section").forEach(section => section.classList.remove("active"));
+            document.querySelectorAll(".print-tab-btn").forEach(button => button.classList.remove("active"));
+            document.getElementById("print-preview-" + type)?.classList.add("active");
+            document.getElementById("print-tab-" + type)?.classList.add("active");
+            const headings = {
+                class: "Class Timetable",
+                teachers: "Teacher Timetable",
+                individual: "Individual Teacher Slips, 3 per page"
+            };
+            const title = document.getElementById("print-preview-title");
+            if (title) title.textContent = headings[type];
+        }
+
+        function renderMasterPrint() {
+            document.getElementById(
+                "master-print-school"
+            ).textContent =
+                appData.schoolName;
+
+            document.getElementById(
+                "teacher-print-school"
+            ).textContent =
+                appData.schoolName;
+
+            document.getElementById(
+                "master-print-session"
+            ).textContent =
+                appData.academicSession;
+
+            document.getElementById(
+                "teacher-print-session"
+            ).textContent =
+                appData.academicSession;
+
+            let classHeader = `
+                <tr>
+                    <th>Class Info</th>
+            `;
+
+            for (
+                let period = 0;
+                period <
+                appData.totalPeriods;
+                period++
+            ) {
+                classHeader += `
+                    <th>
+                        Period ${period + 1}
+                    </th>
+                `;
+            }
+
+            classHeader += "</tr>";
+
+            document.getElementById(
+                "class-print-head"
+            ).innerHTML = classHeader;
+
+            document.getElementById(
+                "class-print-body"
+            ).innerHTML =
+                appData.classes
+                    .map(className => {
+                        let row = `
+                            <tr>
+                                <td>
+                                    <strong>
+                                        ${escapeHtml(
+                                            className
+                                        )}
+                                    </strong>
+
+                                    <br>
+
+                                    <small>
+                                        Incharge:
+                                        ${escapeHtml(
+                                            appData
+                                                .incharges[
+                                                className
+                                            ] ||
+                                            "None"
+                                        )}
+                                    </small>
+                                </td>
+                        `;
+
+                        for (
+                            let period = 0;
+                            period <
+                            appData.totalPeriods;
+                            period++
+                        ) {
+                            const teachers =
+                                appData.teachers
+                                    .filter(
+                                        teacher =>
+                                            appData
+                                                .teacherRoster[
+                                                teacher
+                                            ][period]
+                                                .class ===
+                                            className
+                                    );
+
+                            if (
+                                !teachers.length
+                            ) {
+                                row += `
+                                    <td>Free</td>
+                                `;
+                            } else {
+                                row += `
+                                    <td>
+                                        ${teachers
+                                            .map(
+                                                teacher => `
+                                                    <strong>
+                                                        ${escapeHtml(
+                                                            teacher
+                                                        )}
+                                                    </strong>
+
+                                                    <br>
+
+                                                    <small>
+                                                        ${escapeHtml(
+                                                            appData
+                                                                .teacherRoster[
+                                                                teacher
+                                                            ][period]
+                                                                .subject
+                                                        )}
+                                                    </small>
+                                                `
+                                            )
+                                            .join("<hr>")}
+                                    </td>
+                                `;
+                            }
+                        }
+
+                        row += "</tr>";
+
+                        return row;
+                    })
+                    .join("");
+
+            let teacherHeader = `
+                <tr>
+                    <th>Teacher</th>
+            `;
+
+            for (
+                let period = 0;
+                period <
+                appData.totalPeriods;
+                period++
+            ) {
+                teacherHeader += `
+                    <th>
+                        Period ${period + 1}
+                    </th>
+                `;
+            }
+
+            teacherHeader += "</tr>";
+
+            document.getElementById(
+                "teacher-print-head"
+            ).innerHTML =
+                teacherHeader;
+
+            document.getElementById(
+                "teacher-print-body"
+            ).innerHTML =
+                appData.teachers
+                    .map(teacher => {
+                        let row = `
+                            <tr>
+                                <td>
+                                    <strong>
+                                        ${escapeHtml(
+                                            teacher
+                                        )}
+                                    </strong>
+                                </td>
+                        `;
+
+                        appData.teacherRoster[
+                            teacher
+                        ].forEach(duty => {
+                            if (
+                                duty.class ===
+                                "None"
+                            ) {
+                                row += `
+                                    <td>-</td>
+                                `;
+                            } else {
+                                row += `
+                                    <td>
+                                        <strong>
+                                            ${escapeHtml(
+                                                duty.subject
+                                            )}
+                                        </strong>
+
+                                        <br>
+
+                                        <small>
+                                            ${escapeHtml(
+                                                duty.class
+                                            )}
+                                        </small>
+                                    </td>
+                                `;
+                            }
+                        });
+
+                        row += "</tr>";
+
+                        return row;
+                    })
+                    .join("");
+
+            renderIndividualTeacherTimetables();
+            const classTotal = document.getElementById("print-class-total");
+            const teacherTotal = document.getElementById("print-teacher-total");
+            const periodTotal = document.getElementById("print-period-total");
+            const pageTotal = document.getElementById("print-page-total");
+            if (classTotal) classTotal.textContent = appData.classes.length;
+            if (teacherTotal) teacherTotal.textContent = appData.teachers.length;
+            if (periodTotal) periodTotal.textContent = appData.totalPeriods;
+            if (pageTotal) pageTotal.textContent = 2 + Math.ceil(appData.teachers.length / 3);
+        }
+
+        function renderIndividualTeacherTimetables() {
+            const container = document.getElementById(
+                "individual-teacher-print-area"
+            );
+            if (!container) return;
+
+            const teacherGroups = [];
+            for (let index = 0; index < appData.teachers.length; index += 3) {
+                teacherGroups.push(appData.teachers.slice(index, index + 3));
+            }
+
+            container.innerHTML = teacherGroups.map(group => {
+                const slips = group.map(teacher => {
+                    let headers = `<th>${escapeHtml(teacher)}</th>`;
+                    let dutyCells = `
+                        <td>
+                            <span class="teacher-slip-label">Teacher Timetable</span>
+                        </td>
+                    `;
+
+                    for (let period = 0; period < appData.totalPeriods; period++) {
+                        headers += `<th>Period ${period + 1}</th>`;
+                        const duty = appData.teacherRoster[teacher]?.[period] || {
+                            class: "None",
+                            subject: "None"
+                        };
+
+                        if (duty.class === "None") {
+                            dutyCells += `<td class="teacher-slip-free">Free</td>`;
+                        } else {
+                            dutyCells += `
+                                <td>
+                                    <span class="teacher-slip-class">${escapeHtml(duty.class)}</span>
+                                    <span class="teacher-slip-subject">${escapeHtml(
+                                        duty.subject === "None" ? "" : duty.subject
+                                    )}</span>
+                                </td>
+                            `;
+                        }
+                    }
+
+                    return `
+                        <section class="teacher-slip-block">
+                            <div class="teacher-slip-header">
+                                <div class="teacher-slip-school">${escapeHtml(appData.schoolName)}</div>
+                                <div class="teacher-slip-session">${escapeHtml(appData.academicSession)}</div>
+                            </div>
+                            <table class="print-table teacher-slip-table">
+                                <thead><tr>${headers}</tr></thead>
+                                <tbody><tr>${dutyCells}</tr></tbody>
+                            </table>
+                            <div class="teacher-slip-signatures">
+                                <div class="teacher-slip-signature">Teacher Sign</div>
+                                <div class="teacher-slip-signature">Incharge Sign</div>
+                                <div class="teacher-slip-signature">Principal Sign</div>
+                            </div>
+                        </section>
+                    `;
+                }).join("");
+
+                return `
+                    <div class="paper master-paper teacher-slip-page">
+                        ${slips}
+                    </div>
+                `;
+            }).join("");
+        }
+
+        /*
+         * LOCAL AND GOOGLE SHEET SAVING
+         */
+
+        function saveLocalData() {
+            localStorage.setItem(
+                LOCAL_STORAGE_KEY,
+                JSON.stringify(appData)
+            );
+        }
+
+        async function postToGoogleSheets(
+            payload
+        ) {
+            const response = await fetch(
+                GOOGLE_SCRIPT_URL,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "text/plain;charset=utf-8"
+                    },
+
+                    body:
+                        JSON.stringify(payload)
+                }
+            );
+
+            return response.json();
+        }
+
+        function saveMasterData() {
+            saveLocalData();
+
+            clearTimeout(cloudSaveTimer);
+
+            cloudSaveTimer = setTimeout(
+                async () => {
+                    if (
+                        masterLocked ||
+                        GOOGLE_SCRIPT_URL
+                            .startsWith(
+                                "PASTE_"
+                            )
+                    ) {
+                        return;
+                    }
+
+                    try {
+                        const result =
+                            await postToGoogleSheets({
+                                action:
+                                    "saveData",
+
+                                data:
+                                    appData
+                            });
+
+                        if (
+                            result.masterLocked
+                        ) {
+                            masterLocked = true;
+
+                            applyMasterLockUI();
+                        }
+
+                        if (
+                            !result.success
+                        ) {
+                            console.error(
+                                result.message
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Master saving failed.",
+                            error
+                        );
+                    }
+                },
+                350
+            );
+        }
+
+        function saveTemporaryData() {
+            saveLocalData();
+
+            clearTimeout(cloudSaveTimer);
+
+            cloudSaveTimer = setTimeout(
+                async () => {
+                    if (
+                        GOOGLE_SCRIPT_URL
+                            .startsWith(
+                                "PASTE_"
+                            )
+                    ) {
+                        return;
+                    }
+
+                    const dateKey =
+                        document.getElementById(
+                            "temporary-date"
+                        ).value ||
+                        getLocalDateKey();
+
+                    try {
+                        const result =
+                            await postToGoogleSheets({
+                                action:
+                                    "saveTemporary",
+
+                                dateKey:
+                                    dateKey,
+
+                                temporaryRecord:
+                                    appData
+                                        .temporaryTimetables[
+                                        dateKey
+                                    ]
+                            });
+
+                        if (
+                            typeof result
+                                .masterLocked ===
+                            "boolean"
+                        ) {
+                            masterLocked =
+                                result.masterLocked;
+
+                            applyMasterLockUI();
+                        }
+
+                        if (
+                            !result.success
+                        ) {
+                            console.error(
+                                result.message
+                            );
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Temporary saving failed.",
+                            error
+                        );
+                    }
+                },
+                350
+            );
+        }
+
+        /*
+         * PRINTING
+         */
+
+        function openReliablePrintWindow(title, selector) {
+            if (typeof closeAllSmartSelects === "function") {
+                closeAllSmartSelects();
+            }
+
+            const papers = Array.from(document.querySelectorAll(selector));
+            if (!papers.length) {
+                alert("Print content نہیں ملا۔ پہلے Print page کھولیں۔");
+                return;
+            }
+
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) {
+                alert("Browser نے print window block کر دی ہے۔ Pop-ups allow کریں۔");
+                return;
+            }
+
+            const pageContent = papers.map(paper => paper.outerHTML).join("\n");
+
+            printWindow.document.open();
+            printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${title}</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}
+.paper{display:block!important;visibility:visible!important;position:static!important;width:100%!important;min-height:185mm!important;margin:0!important;padding:7mm!important;border:0!important;box-shadow:none!important;overflow:visible!important;page-break-after:always!important;break-after:page!important}
+.paper:last-child{page-break-after:auto!important;break-after:auto!important}
+h1,h2,p{text-align:center;margin:5px}.print-table{display:table!important;visibility:visible!important;width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important;margin-top:12px}.print-table th,.print-table td{border:1px solid #777;padding:4px;text-align:center;vertical-align:middle;font-size:8pt}.print-table th{background:#e5e7eb;color:#111;font-weight:800}.signatures,.teacher-slip-signatures{display:flex!important;justify-content:space-around!important;margin-top:35px!important;gap:25px}.signature,.teacher-slip-signature{width:150px;border-top:1px solid #111;padding-top:5px;text-align:center;font-size:8pt;font-weight:800;text-transform:uppercase}.teacher-slip-header{display:flex!important;justify-content:space-between!important;align-items:flex-end!important;border-bottom:2px solid #111!important;padding-bottom:7px!important;margin-bottom:10px!important}.teacher-slip-school{font-size:16pt;font-weight:900;text-transform:uppercase}.teacher-slip-session{font-size:10pt;font-weight:800;text-transform:uppercase}.teacher-slip-table{border:2px solid #111!important;margin-top:0!important}.teacher-slip-table th{border-bottom:2px solid #111!important;text-transform:uppercase}.teacher-slip-table th:first-child,.teacher-slip-table td:first-child{width:14%;text-align:left;padding-left:7px}.teacher-slip-table td{height:48px}.teacher-slip-class{display:block;font-size:9pt;font-weight:900;margin-bottom:2px}.teacher-slip-subject{display:block;font-size:8pt;color:#555}.teacher-slip-free{color:#777;font-style:italic}.teacher-slip-page{display:flex!important;flex-direction:column!important;width:100%!important;height:188mm!important;min-height:188mm!important;max-height:188mm!important;padding:3mm 5mm!important;overflow:hidden!important}.teacher-slip-block{display:flex!important;flex-direction:column!important;justify-content:center!important;flex:1 1 33.333%!important;min-height:0!important;padding:2mm 0 1.5mm!important;border-bottom:1px dashed #94a3b8!important;page-break-inside:avoid!important;break-inside:avoid!important}.teacher-slip-block:last-child{border-bottom:none!important}.teacher-slip-header{padding-bottom:1mm!important;margin-bottom:1.5mm!important}.teacher-slip-school{font-size:12pt!important}.teacher-slip-session{font-size:8pt!important}.teacher-slip-table{margin:0!important}.teacher-slip-table th{font-size:6.7pt!important;padding:1.2mm .7mm!important}.teacher-slip-table td{height:10mm!important;font-size:6.8pt!important;padding:.7mm!important}.teacher-slip-class{font-size:7.5pt!important}.teacher-slip-subject,.teacher-slip-label{font-size:6.5pt!important}.teacher-slip-signatures{margin-top:4mm!important;gap:8mm!important}.teacher-slip-signature{width:35mm!important;font-size:6.5pt!important;padding-top:1mm!important}@page{size:A4 landscape;margin:5mm}@media print{html,body{width:100%;height:auto}.paper,.print-table,.teacher-slip-header,.teacher-slip-signatures{visibility:visible!important}}
+</style>
+</head>
+<body>${pageContent}</body>
+</html>`);
+            printWindow.document.close();
+
+            const startPrint = () => {
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 700);
+            };
+
+            if (printWindow.document.readyState === "complete") startPrint();
+            else printWindow.onload = startPrint;
+        }
+
+        function printMasterTimetables() {
+            renderMasterPrint();
+            openReliablePrintWindow(
+                "Class and Individual Teacher Timetables",
+                "#page3 .master-paper"
+            );
+        }
+
+        function printTemporaryTimetable() {
+            renderTemporaryTimetable();
+            openReliablePrintWindow(
+                "Temporary Timetable",
+                "#page4 .temporary-paper"
+            );
+        }
+
+        window.addEventListener(
+            "afterprint",
+            () => {
+                document.body.className =
+                    "";
+            }
+        );
+        
+        
+        /* =========================================================
+   AUTOMATIC SMART CUSTOM DROPDOWNS
+   ========================================================= */
+
+const smartSelectArrow = `
+    <svg
+        class="smart-select-arrow"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+    >
+        <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+`;
+
+
+/*
+ * تمام کھلے ہوئے custom dropdowns بند کرتا ہے۔
+ */
+function closeAllSmartSelects(exceptWrapper = null) {
+    document
+        .querySelectorAll(".smart-select")
+        .forEach(wrapper => {
+            if (
+                exceptWrapper &&
+                wrapper === exceptWrapper
+            ) {
+                return;
+            }
+
+            const button =
+                wrapper.querySelector(
+                    ".smart-select-button"
+                );
+
+            const list =
+                wrapper.querySelector(
+                    ".smart-select-list"
+                );
+
+            if (button) {
+                button.classList.remove("open");
+            }
+
+            if (list) {
+                list.classList.remove("open");
+            }
+
+            const parentCard =
+                wrapper.closest(
+                    ".card, .period-card"
+                );
+
+            if (parentCard) {
+                parentCard.classList.remove(
+                    "smart-dropdown-active"
+                );
+            }
+        });
+}
+
+
+/*
+ * Native select کو smart dropdown میں تبدیل کرتا ہے۔
+ */
+function createSmartSelect(selectElement) {
+    /*
+     * پہلے سے تبدیل شدہ select کو دوبارہ نہ بنائیں۔
+     */
+    if (
+        selectElement.dataset.smartSelect ===
+        "true"
+    ) {
+        updateSmartSelect(selectElement);
+        return;
+    }
+
+    selectElement.dataset.smartSelect =
+        "true";
+
+    /*
+     * Wrapper بنائیں۔
+     */
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className = "smart-select";
+
+    /*
+     * Native select کے مقام پر wrapper لگائیں۔
+     */
+    selectElement.parentNode.insertBefore(
+        wrapper,
+        selectElement
+    );
+
+    wrapper.appendChild(selectElement);
+
+    /*
+     * Visible button بنائیں۔
+     */
+    const displayButton =
+        document.createElement("button");
+
+    displayButton.type = "button";
+    displayButton.className =
+        "smart-select-button";
+
+    /*
+     * Selected value کا text۔
+     */
+    const selectedText =
+        document.createElement("span");
+
+    selectedText.className =
+        "smart-select-text";
+
+    displayButton.appendChild(
+        selectedText
+    );
+
+    displayButton.insertAdjacentHTML(
+        "beforeend",
+        smartSelectArrow
+    );
+
+    /*
+     * Options list بنائیں۔
+     */
+    const optionsList =
+        document.createElement("div");
+
+    optionsList.className =
+        "smart-select-list";
+
+    wrapper.appendChild(displayButton);
+    wrapper.appendChild(optionsList);
+
+    /*
+     * Button click پر dropdown arrow کے نیچے کھلے۔
+     */
+    displayButton.addEventListener(
+        "click",
+        event => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (
+                selectElement.disabled
+            ) {
+                return;
+            }
+
+            const isAlreadyOpen =
+                optionsList.classList
+                    .contains("open");
+
+            closeAllSmartSelects(
+                isAlreadyOpen
+                    ? null
+                    : wrapper
+            );
+
+            if (isAlreadyOpen) {
+                displayButton.classList.remove(
+                    "open"
+                );
+
+                optionsList.classList.remove(
+                    "open"
+                );
+
+                const card =
+                    wrapper.closest(
+                        ".card, .period-card"
+                    );
+
+                if (card) {
+                    card.classList.remove(
+                        "smart-dropdown-active"
+                    );
+                }
+
+                return;
+            }
+
+            displayButton.classList.add(
+                "open"
+            );
+
+            optionsList.classList.add(
+                "open"
+            );
+
+            const card =
+                wrapper.closest(
+                    ".card, .period-card"
+                );
+
+            if (card) {
+                card.classList.add(
+                    "smart-dropdown-active"
+                );
+            }
+
+            /*
+             * Selected option کو list میں visible کریں۔
+             */
+            const selectedOption =
+                optionsList.querySelector(
+                    ".smart-select-option.selected"
+                );
+
+            if (selectedOption) {
+                selectedOption.scrollIntoView({
+                    block: "nearest"
+                });
+            }
+        }
+    );
+
+    /*
+     * Native select کو باہر سے update کرنے پر
+     * custom dropdown بھی update ہو۔
+     */
+    selectElement.addEventListener(
+        "change",
+        () => {
+            updateSmartSelect(
+                selectElement
+            );
+        }
+    );
+
+    buildSmartSelectOptions(
+        selectElement
+    );
+}
+
+
+/*
+ * Native select کی options سے custom options تیار کرتا ہے۔
+ */
+function buildSmartSelectOptions(
+    selectElement
+) {
+    const wrapper =
+        selectElement.closest(
+            ".smart-select"
+        );
+
+    if (!wrapper) {
+        return;
+    }
+
+    const optionsList =
+        wrapper.querySelector(
+            ".smart-select-list"
+        );
+
+    if (!optionsList) {
+        return;
+    }
+
+    optionsList.innerHTML = "";
+
+    Array.from(
+        selectElement.options
+    ).forEach((nativeOption, index) => {
+        const optionButton =
+            document.createElement("button");
+
+        optionButton.type = "button";
+
+        optionButton.className =
+            "smart-select-option";
+
+        optionButton.textContent =
+            nativeOption.textContent;
+
+        optionButton.dataset.value =
+            nativeOption.value;
+
+        if (
+            nativeOption.selected
+        ) {
+            optionButton.classList.add(
+                "selected"
+            );
+        }
+
+        if (
+            nativeOption.disabled
+        ) {
+            optionButton.disabled = true;
+        }
+
+        optionButton.addEventListener(
+            "click",
+            event => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (
+                    nativeOption.disabled ||
+                    selectElement.disabled
+                ) {
+                    return;
+                }
+
+                /*
+                 * Native select کی value تبدیل کریں۔
+                 */
+                selectElement.selectedIndex =
+                    index;
+
+                selectElement.value =
+                    nativeOption.value;
+
+                /*
+                 * HTML میں موجود onchange function چلائیں۔
+                 */
+                selectElement.dispatchEvent(
+                    new Event(
+                        "change",
+                        {
+                            bubbles: true
+                        }
+                    )
+                );
+
+                closeAllSmartSelects();
+            }
+        );
+
+        optionsList.appendChild(
+            optionButton
+        );
+    });
+
+    updateSmartSelect(
+        selectElement
+    );
+}
+
+
+/*
+ * Selected text، selected option اور disabled status sync کرتا ہے۔
+ */
+function updateSmartSelect(
+    selectElement
+) {
+    const wrapper =
+        selectElement.closest(
+            ".smart-select"
+        );
+
+    if (!wrapper) {
+        return;
+    }
+
+    const displayButton =
+        wrapper.querySelector(
+            ".smart-select-button"
+        );
+
+    const selectedText =
+        wrapper.querySelector(
+            ".smart-select-text"
+        );
+
+    const optionsList =
+        wrapper.querySelector(
+            ".smart-select-list"
+        );
+
+    if (
+        !displayButton ||
+        !selectedText ||
+        !optionsList
+    ) {
+        return;
+    }
+
+    const selectedOption =
+        selectElement.options[
+            selectElement.selectedIndex
+        ];
+
+    selectedText.textContent =
+        selectedOption
+            ? selectedOption.textContent
+            : "Select";
+
+    displayButton.classList.toggle(
+        "disabled",
+        selectElement.disabled
+    );
+
+    displayButton.disabled =
+        selectElement.disabled;
+
+    Array.from(
+        optionsList.children
+    ).forEach(
+        (optionButton, index) => {
+            optionButton.classList.toggle(
+                "selected",
+                index ===
+                    selectElement.selectedIndex
+            );
+        }
+    );
+}
+
+
+/*
+ * Page میں موجود تمام نئے selects کو خودکار طور پر تبدیل کریں۔
+ */
+function initializeSmartSelects(
+    container = document
+) {
+    container
+        .querySelectorAll(
+            "select:not([data-smart-select='true'])"
+        )
+        .forEach(selectElement => {
+            createSmartSelect(
+                selectElement
+            );
+        });
+
+    /*
+     * پہلے سے تیار dropdowns کی value اور
+     * disabled status بھی refresh کریں۔
+     */
+    container
+        .querySelectorAll(
+            "select[data-smart-select='true']"
+        )
+        .forEach(selectElement => {
+            updateSmartSelect(
+                selectElement
+            );
+        });
+}
+
+
+/*
+ * Dropdown کے باہر click کرنے پر list بند ہوگی۔
+ */
+document.addEventListener(
+    "click",
+    () => {
+        closeAllSmartSelects();
+    }
+);
+
+
+/*
+ * Escape key سے dropdown بند ہوگا۔
+ */
+document.addEventListener(
+    "keydown",
+    event => {
+        if (event.key === "Escape") {
+            closeAllSmartSelects();
+            closeMobileMenu();
+        }
+    }
+);
+
+
+/*
+ * JavaScript سے dynamically بننے والے selects
+ * خود detect کیے جائیں گے۔
+ */
+const smartSelectObserver =
+    new MutationObserver(mutations => {
+        let newSelectFound = false;
+
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(
+                addedNode => {
+                    if (
+                        addedNode.nodeType !==
+                        Node.ELEMENT_NODE
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        addedNode.matches &&
+                        addedNode.matches(
+                            "select"
+                        )
+                    ) {
+                        newSelectFound = true;
+                    }
+
+                    if (
+                        addedNode.querySelector &&
+                        addedNode.querySelector(
+                            "select"
+                        )
+                    ) {
+                        newSelectFound = true;
+                    }
+                }
+            );
+        });
+
+        if (newSelectFound) {
+            requestAnimationFrame(() => {
+                initializeSmartSelects();
+            });
+        }
+    });
+
+
+/*
+ * Page load ہونے کے بعد Observer شروع کریں۔
+ */
+window.addEventListener(
+    "load",
+    () => {
+        initializeSmartSelects();
+
+        smartSelectObserver.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+);
+
+        
+        
+        
+    </script>
+</body>
+</html>
